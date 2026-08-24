@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shop Scheduler</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#f4f6f9;color:#222;font-size:14px}
+.topbar{background:#1a3a5c;color:#fff;padding:10px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.topbar h1{font-size:17px;font-weight:700}
+.topbar-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.topbar button{font-size:12px;padding:5px 12px;border-radius:6px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.12);color:#fff;cursor:pointer}
+.topbar button:hover{background:rgba(255,255,255,.22)}
+.add-btn{background:#2980b9 !important;border-color:#2980b9 !important;font-weight:700}
+.rush-btn{background:#c0392b !important;border-color:#c0392b !important;font-weight:700}
+.weekend-btn{background:#6c3483 !important;border-color:#6c3483 !important;font-weight:700}
+.import-btn{background:#117a65 !important;border-color:#117a65 !important;font-weight:700}
+.import-drop{border:2px dashed #2ecc71;border-radius:10px;padding:30px 20px;text-align:center;cursor:pointer;color:#aaa;font-size:13px;transition:background .15s;margin-bottom:10px}
+.import-drop.over{background:#0d2a1f;border-color:#27ae60}
+.import-row{display:grid;grid-template-columns:1fr 1fr 80px;gap:6px;align-items:center;background:#0d1621;border-radius:6px;padding:7px 10px;margin-bottom:5px;font-size:11px}
+.import-row-hdr{font-size:10px;color:#7f8c8d;font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.import-chk{accent-color:#2ecc71;width:16px;height:16px}
+.import-msel{font-size:11px;padding:3px 5px;border-radius:5px;border:1px solid #34495e;background:#141e2b;color:#ecf0f1;width:100%}
+.import-qty{font-size:11px;padding:3px 6px;border-radius:5px;border:1px solid #34495e;background:#141e2b;color:#ecf0f1;width:60px}
+.mbtn-import{background:#117a65 !important;border-color:#117a65 !important;color:#fff !important}
+.file-row{display:flex;gap:6px;align-items:center;margin-bottom:6px}
+.file-row input{flex:1;font-size:12px;padding:6px 9px;border-radius:6px;border:1px solid #34495e;background:#141e2b;color:#ecf0f1}
+.file-row input::placeholder{color:#555}
+.file-type-sel{font-size:11px;padding:6px 5px;border-radius:6px;border:1px solid #34495e;background:#141e2b;color:#ecf0f1;width:90px}
+.file-del-btn{background:none;border:none;color:#e74c3c;font-size:15px;cursor:pointer;padding:0 4px;line-height:1}
+.file-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:4px 10px;border-radius:5px;cursor:pointer;text-decoration:none;border:none;margin:2px;white-space:nowrap}
+.file-badge:hover{opacity:.8}
+.add-file-btn{font-size:11px;padding:5px 12px;border-radius:6px;border:1px dashed #34495e;background:none;color:#aaa;cursor:pointer;margin-top:2px}
+.add-file-btn:hover{border-color:#2980b9;color:#2980b9}
+.ob-files{margin-top:4px;display:flex;flex-wrap:wrap;gap:2px}
+.ob-file-chip{font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700;cursor:pointer;border:none;text-decoration:none;display:inline-block}
+.ob-file-chip:hover{opacity:.75}
+.sync-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:middle}
+.sync-ok{background:#2ecc71}.sync-err{background:#e74c3c}.sync-busy{background:#f39c12;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.tabs{display:flex;background:#fff;border-bottom:2px solid #dde3eb;padding:0 16px;overflow-x:auto}
+.tab{font-size:13px;font-weight:600;padding:10px 18px;cursor:pointer;color:#666;border-bottom:3px solid transparent;margin-bottom:-2px;background:none;border-top:none;border-left:none;border-right:none;white-space:nowrap}
+.tab.active{color:#1a3a5c;border-bottom-color:#2980b9}
+.tab:hover{color:#1a3a5c}
+.main{padding:14px 16px}
+.week-nav{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.week-nav span{font-size:14px;font-weight:700;color:#1a3a5c;min-width:200px;text-align:center}
+.week-nav button{padding:5px 12px;border-radius:6px;border:1px solid #c5d5e8;background:#fff;color:#1a3a5c;cursor:pointer;font-weight:600}
+.week-nav button:hover{background:#eaf2fb}
+.summary-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.sum-card{background:#fff;border:1px solid #dde3eb;border-radius:8px;padding:7px 13px}
+.sum-card .sl{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.4px}
+.sum-card .sv{font-size:18px;font-weight:700;color:#1a3a5c}
+.sum-card.warn .sv{color:#e67e22}
+.cal-wrap{border:2px solid #c5d5e8;border-radius:10px;overflow:hidden;background:#fff}
+.cal-header{display:grid;grid-template-columns:100px repeat(7,1fr);background:#1a3a5c}
+.cal-hcell{padding:8px 4px;font-size:11px;font-weight:700;color:#fff;text-align:center;border-right:1px solid rgba(255,255,255,.15)}
+.cal-hcell:last-child{border-right:none}
+.cal-hcell.today-h{background:#2471a3}
+.cal-hcell.wknd-h{background:#4a235a}
+.cal-hcell.wknd-open{background:#6c3483}
+.hday{font-size:12px;font-weight:700}
+.hcap{font-size:10px;margin-top:1px;font-weight:600}
+.hcap-sub{font-size:9px;margin-top:1px;color:rgba(255,255,255,.65)}
+.cap-ok{color:#a9dfbf}.cap-over{color:#f1948a}
+.machine-section{border-top:3px solid #c5d5e8}
+.machine-section:first-child{border-top:none}
+.machine-row{display:grid;grid-template-columns:100px repeat(7,1fr)}
+.mlabel{display:flex;flex-direction:column;justify-content:center;padding:8px;border-right:2px solid #c5d5e8;position:relative;overflow:hidden;min-height:80px}
+.mlabel-strip{position:absolute;left:0;top:0;bottom:0;width:5px}
+.mlabel-name{font-size:11px;font-weight:700;color:#1a3a5c;margin-left:9px;line-height:1.3}
+.mlabel-hrs{font-size:10px;color:#888;margin-left:9px;margin-top:2px}
+.dcell{padding:4px;border-right:1px solid #eaeff5;background:#fff;min-height:80px;transition:background .15s}
+.dcell:last-child{border-right:none}
+.dcell.today-col{background:#f0f7fd}
+.dcell.wknd-col{background:#faf5ff}
+.dcell.wknd-closed{background:#f5f5f5}
+.dcell.drag-over{background:#e8f4fb;outline:2px dashed #2980b9}
+.wknd-closed-msg{font-size:9px;color:#bbb;text-align:center;padding:8px 2px;line-height:1.5}
+.oblock{border-radius:6px;padding:5px 7px;margin-bottom:4px;cursor:grab;border-left-width:4px;border-left-style:solid;border-top:1px solid transparent;border-right:1px solid transparent;border-bottom:1px solid transparent;transition:box-shadow .15s,opacity .15s;user-select:none;position:relative}
+.oblock:hover{box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.oblock.dragging{opacity:.4;cursor:grabbing}
+.oblock.rush{outline:1.5px solid #e74c3c}
+.rush-label{position:absolute;top:3px;right:3px;background:#e74c3c;color:#fff;font-size:8px;font-weight:700;padding:1px 5px;border-radius:3px}
+.ob-top{display:flex;justify-content:space-between;align-items:flex-start;gap:4px;margin-bottom:2px}
+.ob-name{font-size:11px;font-weight:700;line-height:1.3;color:#1a3a5c}
+.ob-badge{font-size:9px;padding:1px 5px;border-radius:4px;white-space:nowrap;flex-shrink:0;font-weight:700}
+.ob-row{font-size:10px;line-height:1.5;color:#555}
+.split-tag{font-size:9px;color:#8e44ad;font-weight:700;margin-top:1px}
+.legend{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px}
+.leg{display:flex;align-items:center;gap:5px;font-size:11px;color:#666}
+.leg-dot{width:11px;height:11px;border-radius:3px}
+.month-header{display:grid;grid-template-columns:repeat(7,1fr);background:#1a3a5c;border-radius:8px 8px 0 0;overflow:hidden}
+.month-day-label{padding:8px;font-size:12px;font-weight:700;color:#fff;text-align:center;border-right:1px solid rgba(255,255,255,.15)}
+.month-day-label:last-child{border-right:none}
+.month-day-label.wknd{background:#4a235a}
+.month-grid{border:2px solid #c5d5e8;border-top:none;border-radius:0 0 10px 10px;overflow:hidden}
+.month-week{display:grid;grid-template-columns:repeat(7,1fr);border-top:2px solid #c5d5e8}
+.month-week:first-child{border-top:none}
+.month-cell{border-right:1px solid #dde3eb;padding:5px;min-height:90px;background:#fff}
+.month-cell:last-child{border-right:none}
+.month-cell.today-month{background:#f0f7fd}
+.month-cell.past{background:#fafafa}
+.month-cell.wknd-month{background:#faf5ff}
+.month-cell.wknd-closed-month{background:#f5f5f5}
+.month-date{font-size:11px;font-weight:700;color:#1a3a5c;margin-bottom:3px;display:flex;justify-content:space-between}
+.month-date.today-date{color:#2980b9}
+.month-date.wknd-date{color:#8e44ad}
+.month-cap{font-size:9px;font-weight:700}
+.month-block{font-size:9px;padding:2px 5px;border-radius:3px;margin-bottom:2px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-left:3px solid transparent;font-weight:600}
+.month-block:hover{opacity:.8}
+.month-more{font-size:9px;color:#888;cursor:pointer}
+.month-more:hover{color:#2980b9}
+.filter-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+.filter-bar input,.filter-bar select{font-size:12px;padding:6px 10px;border-radius:6px;border:1px solid #c5d5e8;background:#fff;color:#222}
+.filter-bar input{width:200px}
+.jtable{width:100%;border-collapse:collapse;font-size:12px;background:#fff;border-radius:10px;overflow:hidden;border:1px solid #dde3eb}
+.jtable th{background:#1a3a5c;color:#fff;font-size:11px;font-weight:700;text-align:left;padding:9px 10px;white-space:nowrap}
+.jtable td{padding:8px 10px;border-bottom:1px solid #eaeff5;vertical-align:top}
+.jtable tr:hover td{background:#f0f7fd;cursor:pointer}
+.badge{font-size:10px;padding:3px 8px;border-radius:4px;white-space:nowrap;display:inline-block;font-weight:700}
+.mpill{font-size:10px;padding:2px 7px;border-radius:10px;color:#fff;font-weight:600;display:inline-block;margin:1px}
+.mach-totals{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.mach-grid-tab{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.mach-card{background:#fff;border:1px solid #dde3eb;border-radius:10px;padding:14px 16px;border-top-width:4px}
+.mach-card-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.mach-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.mach-title{font-size:14px;font-weight:700;color:#1a3a5c}
+.mach-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.mach-stat{background:#f4f6f9;border-radius:6px;padding:7px 10px}
+.mach-stat .msl{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.3px}
+.mach-stat .msv{font-size:20px;font-weight:700}
+.bar-track{background:#eaeff5;border-radius:4px;height:7px;overflow:hidden;margin-bottom:8px}
+.bar-fill{height:7px;border-radius:4px}
+.mach-joblist{border-top:1px solid #eaeff5;padding-top:8px}
+.mach-jrow{font-size:11px;color:#555;padding:3px 0;display:flex;justify-content:space-between;border-bottom:1px solid #f0f3f7}
+.mach-jrow:last-child{border-bottom:none}
+.modal-bg{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.55);display:flex;align-items:flex-start;justify-content:center;z-index:1000;padding:20px 10px;overflow-y:auto}
+.modal{background:#1e2a38;border-radius:12px;border:1px solid #2c3e50;padding:22px 24px;width:440px;max-width:97%;color:#ecf0f1}
+.modal.rush-modal{border:2px solid #e74c3c}
+.modal.wknd-modal{border:2px solid #8e44ad}
+.modal h3{font-size:17px;font-weight:700;margin-bottom:16px;color:#fff}
+.rush-hdr{color:#e74c3c !important}
+.wknd-hdr{color:#c39bd3 !important}
+.form-row{margin-bottom:10px}
+.form-row label{font-size:11px;color:#aaa;display:block;margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+.form-row input,.form-row select{width:100%;font-size:13px;padding:8px 11px;border-radius:7px;border:1px solid #34495e;background:#141e2b;color:#ecf0f1}
+.form-row input::placeholder{color:#555}
+.mach-grid-form{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.mfield label{font-size:11px;color:#aaa;display:block;margin-bottom:2px;font-weight:600}
+.mfield input{width:100%;font-size:12px;padding:6px 8px;border-radius:6px;border:1px solid #34495e;background:#141e2b;color:#ecf0f1}
+.modal-note{font-size:11px;color:#7f8c8d;margin-top:8px;line-height:1.5}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;flex-wrap:wrap}
+.modal-actions button{font-size:13px;padding:8px 18px;border-radius:7px;border:1px solid #34495e;background:#2c3e50;color:#ecf0f1;cursor:pointer;font-weight:600}
+.modal-actions button:hover{background:#34495e}
+.mbtn-save{background:#2980b9 !important;border-color:#2980b9 !important;color:#fff !important}
+.mbtn-rush{background:#c0392b !important;border-color:#c0392b !important;color:#fff !important}
+.mbtn-wknd{background:#6c3483 !important;border-color:#6c3483 !important;color:#fff !important}
+.mbtn-del{color:#e74c3c !important;border-color:#e74c3c !important}
+.mbtn-del:hover{background:#4a2020 !important}
+/* Setup screen */
+.setup{max-width:560px;margin:30px auto;background:#fff;border-radius:12px;border:2px solid #c5d5e8;padding:30px 34px}
+.setup h2{font-size:20px;font-weight:700;color:#1a3a5c;margin-bottom:8px}
+.setup p{font-size:13px;color:#555;margin-bottom:20px;line-height:1.7}
+.setup-step{background:#f0f7fd;border-left:4px solid #2980b9;border-radius:6px;padding:12px 14px;margin-bottom:10px;font-size:13px;color:#333;line-height:1.7}
+.setup-step strong{color:#1a3a5c;display:block;margin-bottom:2px}
+.setup-step code{background:#dde3eb;padding:1px 6px;border-radius:4px;font-family:monospace;font-size:12px}
+.setup-label{font-size:12px;font-weight:700;color:#1a3a5c;display:block;margin:14px 0 4px}
+.setup-input{width:100%;font-size:13px;padding:10px 12px;border-radius:7px;border:1.5px solid #c5d5e8;background:#fff;color:#222;font-family:monospace}
+.setup-input:focus{outline:none;border-color:#2980b9}
+.setup-btn{background:#2980b9;color:#fff;border:none;border-radius:7px;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer;margin-top:16px;width:100%}
+.setup-btn:hover{background:#1f6a9a}
+.setup-err{color:#e74c3c;font-size:12px;margin-top:10px;padding:8px 12px;background:#fdecea;border-radius:6px;display:none}
+.err-banner{background:#fdecea;border:1px solid #e74c3c;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#c0392b;display:none}
+.ok-banner{background:#d5f5e3;border:1px solid #27ae60;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#145a32;display:none}
+.drag-hint{font-size:11px;color:#888;margin-bottom:8px;padding:6px 10px;background:#f0f7fd;border-radius:6px;border:1px solid #c5d5e8}
+.wknd-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #2c3e50}
+.wknd-row:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.wknd-wlabel{font-size:12px;font-weight:700;color:#ecf0f1;min-width:130px}
+.wknd-dinput{display:flex;align-items:center;gap:5px}
+.wknd-dinput label{font-size:11px;color:#aaa;white-space:nowrap}
+.wknd-dinput input{width:56px;font-size:12px;padding:5px 7px;border-radius:6px;border:1px solid #34495e;background:#141e2b;color:#ecf0f1}
+</style>
+</head>
+<body>
+
+<!-- Setup screen -->
+<div id="setup-screen" style="display:none" class="main">
+  <div class="setup">
+    <h2>⚙️ Shop Scheduler — Quick Setup</h2>
+    <p>This takes <strong>2 minutes</strong>. You only do this once. After setup, your whole team just opens the Netlify link — no login, no app, nothing to install.</p>
+
+    <div class="setup-step"><strong>Step 1 — Go to jsonbin.io</strong>Open <strong>jsonbin.io</strong> in a new tab and click <strong>Sign Up Free</strong> (use Google or email).</div>
+    <div class="setup-step"><strong>Step 2 — Create a bin</strong>After signing in, click <strong>+ New Bin</strong>. In the editor paste exactly this: <code>{"orders":[],"nextId":1}</code> — then click <strong>Create Bin</strong>.</div>
+    <div class="setup-step"><strong>Step 3 — Copy the Bin ID</strong>After creating, you'll see a URL like <code>https://api.jsonbin.io/v3/b/abc123xyz</code>. The part after <code>/b/</code> is your <strong>Bin ID</strong>. Copy it.</div>
+    <div class="setup-step"><strong>Step 4 — Get your API key</strong>Click your profile icon → <strong>API Keys</strong> → copy your <strong>X-Master-Key</strong>.</div>
+    <div class="setup-step"><strong>Step 5 — Paste them below</strong></div>
+
+    <label class="setup-label">Bin ID</label>
+    <input class="setup-input" id="cfg-bin" placeholder="abc123xyz...">
+    <label class="setup-label">X-Master-Key</label>
+    <input class="setup-input" id="cfg-key" placeholder="$2a$10$xxxxxxxxxxxxxxxxxxxxxx...">
+    <div class="setup-err" id="setup-err"></div>
+    <button class="setup-btn" id="setup-btn" onclick="doSetup()">Connect &amp; Start Scheduling →</button>
+  </div>
+</div>
+
+<!-- Main app -->
+<div id="app" style="display:none">
+  <div class="topbar">
+    <h1>⚙️ Shop Scheduler</h1>
+    <div class="topbar-right">
+      <span style="font-size:11px;opacity:.9"><span class="sync-dot sync-ok" id="sync-dot"></span><span id="sync-text">Connected</span></span>
+      
+      <button onclick="loadData()">↻ Refresh</button>
+      <button class="weekend-btn" onclick="openWkndModal()">📅 Weekend Hours</button>
+      <button class="rush-btn" onclick="openRush()">🚨 Rush Job</button>
+      <button class="import-btn" onclick="openImport()">📥 Import Quote</button>
+      <button class="add-btn" onclick="openAdd()">+ Add Order</button>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('calendar')">Week</button>
+    <button class="tab" onclick="switchTab('month')">Month</button>
+    <button class="tab" onclick="switchTab('jobs')">All Jobs</button>
+    <button class="tab" onclick="switchTab('machines')">Machines</button>
+  </div>
+  <div class="main">
+    <div id="view-calendar">
+      <div class="err-banner" id="err-banner"></div>
+      <div class="ok-banner" id="ok-banner"></div>
+      <div class="week-nav">
+        <button onclick="shiftWeek(-1)">&#8592; Prev</button>
+        <span id="week-label"></span>
+        <button onclick="shiftWeek(1)">Next &#8594;</button>
+        <button onclick="goToday()">Today</button>
+      </div>
+      <div class="drag-hint">💡 Drag jobs to move them. Use <strong>🚨 Rush Job</strong> to jump a job to the front. Use <strong>📅 Weekend Hours</strong> to open Saturdays and Sundays.</div>
+      <div class="summary-bar" id="summary-bar"></div>
+      <div class="cal-wrap"><div class="cal-header" id="cal-header"></div><div id="cal-body"></div></div>
+      <div class="legend">
+        <div class="leg"><div class="leg-dot" style="background:#2980b9"></div>Scheduled</div>
+        <div class="leg"><div class="leg-dot" style="background:#27ae60"></div>In Progress</div>
+        <div class="leg"><div class="leg-dot" style="background:#8e44ad"></div>Done</div>
+        <div class="leg"><div class="leg-dot" style="background:#e67e22"></div>On Hold</div>
+        <div class="leg"><div class="leg-dot" style="background:#e74c3c"></div>Rush</div>
+        <div class="leg"><div class="leg-dot" style="background:#c39bd3"></div>Weekend open</div>
+      </div>
+    </div>
+    <div id="view-month" style="display:none">
+      <div class="week-nav">
+        <button onclick="shiftMonth(-1)">&#8592;</button>
+        <span id="month-label" style="min-width:160px"></span>
+        <button onclick="shiftMonth(1)">&#8594;</button>
+        <button onclick="goMonthToday()">Today</button>
+      </div>
+      <div class="month-header" id="month-header"></div>
+      <div class="month-grid" id="month-grid"></div>
+    </div>
+    <div id="view-jobs" style="display:none">
+      <div class="filter-bar">
+        <input id="search-box" placeholder="Search customer or part..." oninput="renderJobs()">
+        <select id="filter-status" onchange="renderJobs()"><option value="">All statuses</option><option>Scheduled</option><option>In Progress</option><option>Done</option><option>On Hold</option></select>
+        <select id="filter-machine" onchange="renderJobs()"><option value="">All machines</option></select>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="jtable">
+          <thead><tr><th>#</th><th>Rush</th><th>Customer</th><th>Part/Job</th><th>Qty</th><th>Due</th><th>Starts</th><th>Status</th><th>Machines &amp; Hours</th><th>Total Hrs</th></tr></thead>
+          <tbody id="job-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="view-machines" style="display:none">
+      <div class="mach-totals" id="mach-totals"></div>
+      <div class="mach-grid-tab" id="mach-cards"></div>
+    </div>
+  </div>
+</div>
+<div id="modal-root"></div>
+
+<script>
+const MACHINES=['Tube Laser','Flat Laser','Welding','Tapping','Bending','Miscellaneous'];
+const MCOLORS={'Tube Laser':'#1a6fa8','Flat Laser':'#0f8a6e','Welding':'#b94f0a','Tapping':'#6d3db5','Bending':'#a07c0a','Miscellaneous':'#5a6577'};
+const MICONS={'Tube Laser':'🔵','Flat Laser':'🟢','Welding':'🟠','Tapping':'🟣','Bending':'🟡','Miscellaneous':'⚙️'};
+const MBGS={'Tube Laser':'#e8f4fc','Flat Laser':'#e4f5ef','Welding':'#fdf0e8','Tapping':'#f3edfb','Bending':'#faf5e4','Miscellaneous':'#f0f1f3'};
+const STATUS_COLORS={'Scheduled':'#2980b9','In Progress':'#27ae60','Done':'#8e44ad','On Hold':'#e67e22'};
+const STATUS_BG={'Scheduled':'#d6eaf8','In Progress':'#d5f5e3','Done':'#e8daef','On Hold':'#fdebd0'};
+const STATUS_TEXT={'Scheduled':'#1a5276','In Progress':'#145a32','Done':'#4a235a','On Hold':'#784212'};
+const DAYNAMES7=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const WKND=[5,6];
+const CFG_KEY='sched_jb_v1';
+const WKND_KEY='sched_wknd_v1';
+
+let weekOffset=0,monthOffset=0,currentTab='calendar';
+let orders=[],nextId=1;
+let BIN_ID='',API_KEY='';
+let dragId=null;
+let saving=false;
+let weekendHours={};
+
+// ── Config ────────────────────────────────────────────────────────────────────
+function loadCfg(){
+  try{const c=JSON.parse(localStorage.getItem(CFG_KEY)||'{}');if(c.bin&&c.key){BIN_ID=c.bin;API_KEY=c.key;return true;}}catch(e){}
+  return false;
+}
+function loadWknd(){try{weekendHours=JSON.parse(localStorage.getItem(WKND_KEY)||'{}')}catch(e){weekendHours={};}}
+function saveWknd(){localStorage.setItem(WKND_KEY,JSON.stringify(weekendHours));}
+function wkndCap(wo,di){if(!WKND.includes(di))return 16;return weekendHours[wo+'_'+di]||0;}
+function wkndOpen(wo,di){return WKND.includes(di)&&wkndCap(wo,di)>0;}
+
+async function doSetup(){
+  const bin=document.getElementById('cfg-bin').value.trim();
+  const key=document.getElementById('cfg-key').value.trim();
+  const err=document.getElementById('setup-err');
+  const btn=document.getElementById('setup-btn');
+  err.style.display='none';
+  if(!bin||!key){err.textContent='Please fill in both fields.';err.style.display='block';return;}
+  btn.textContent='Testing...';btn.disabled=true;
+  BIN_ID=bin;API_KEY=key;
+  try{
+    const r=await jbGet();
+    localStorage.setItem(CFG_KEY,JSON.stringify({bin,key}));
+    orders=r.orders||[];nextId=r.nextId||1;
+    document.getElementById('setup-screen').style.display='none';
+    document.getElementById('app').style.display='';
+    render();
+  }catch(e){
+    err.textContent='Could not connect: '+e.message+'. Check your Bin ID and API Key.';
+    err.style.display='block';
+  }
+  btn.textContent='Connect & Start Scheduling →';btn.disabled=false;
+}
+function resetSetup(){if(confirm('Re-enter JSONBin credentials?')){localStorage.removeItem(CFG_KEY);document.getElementById('app').style.display='none';document.getElementById('setup-screen').style.display='';}}
+
+// ── JSONBin API ───────────────────────────────────────────────────────────────
+async function jbGet(){
+  const r=await fetch('https://api.jsonbin.io/v3/b/'+BIN_ID+'/latest',{headers:{'X-Master-Key':API_KEY}});
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  const j=await r.json();
+  return j.record;
+}
+async function jbPut(data){
+  const r=await fetch('https://api.jsonbin.io/v3/b/'+BIN_ID,{
+    method:'PUT',
+    headers:{'Content-Type':'application/json','X-Master-Key':API_KEY,'X-Bin-Versioning':'false'},
+    body:JSON.stringify(data)
+  });
+  if(!r.ok){const t=await r.text();throw new Error('HTTP '+r.status+': '+t);}
+  return await r.json();
+}
+
+function setSyncBusy(t){document.getElementById('sync-dot').className='sync-dot sync-busy';document.getElementById('sync-text').textContent=t||'Saving...';}
+function setSyncOk(t){document.getElementById('sync-dot').className='sync-dot sync-ok';document.getElementById('sync-text').textContent=t||'Saved ✓';}
+function setSyncErr(t){document.getElementById('sync-dot').className='sync-dot sync-err';document.getElementById('sync-text').textContent=t||'Error';}
+function showErr(msg){const b=document.getElementById('err-banner');b.textContent='⚠️ '+msg;b.style.display='block';setTimeout(()=>b.style.display='none',8000);}
+function showOk(msg){const b=document.getElementById('ok-banner');b.textContent='✓ '+msg;b.style.display='block';setTimeout(()=>b.style.display='none',4000);}
+
+async function loadData(){
+  setSyncBusy('Loading...');
+  try{
+    const d=await jbGet();
+    orders=d.orders||[];nextId=d.nextId||1;
+    setSyncOk('Connected');render();
+  }catch(e){setSyncErr('Load failed');showErr('Could not load: '+e.message);}
+}
+
+async function persist(){
+  if(saving)return; // prevent concurrent writes
+  saving=true;setSyncBusy();
+  try{
+    await jbPut({orders,nextId});
+    setSyncOk();
+  }catch(e){setSyncErr('Save failed');showErr('Save failed: '+e.message);}
+  saving=false;
+}
+
+// ── Schedule logic ────────────────────────────────────────────────────────────
+function absDayOrder(o){return((o.weekOffset||0)*7)+(o.day||0);}
+function absDayMachine(o,m){
+  // machines[m] can be a number (legacy) or {h, wo, day}
+  const md=o.machines[m];
+  if(md&&typeof md==='object'){
+    const wo=md.wo!==undefined?md.wo:(o.weekOffset||0);
+    const day=md.day!==undefined?md.day:(o.day||0);
+    return wo*7+day;
+  }
+  return absDayOrder(o);
+}
+function machHours(o,m){const md=o.machines[m];return typeof md==='object'?md.h:md;}
+function absDay(o){return absDayOrder(o);}
+
+function computeSchedule(){
+  const avail={};
+  function getAvail(d,m){
+    if(!avail[d])avail[d]={};
+    if(avail[d][m]===undefined){const wo=Math.floor(d/7),di=((d%7)+7)%7;avail[d][m]=wkndCap(wo,di);}
+    return avail[d][m];
+  }
+  function useAvail(d,m,h){if(!avail[d])avail[d]={};if(avail[d][m]===undefined){const wo=Math.floor(d/7),di=((d%7)+7)%7;avail[d][m]=wkndCap(wo,di);}avail[d][m]-=h;}
+
+  const sorted=[...orders].sort((a,b)=>{
+    if(a.rush&&!b.rush)return -1;if(!a.rush&&b.rush)return 1;
+    return absDay(a)-absDay(b)||a.id-b.id;
+  });
+  const placements={};
+  sorted.forEach(o=>{
+    placements[o.id]={};
+    Object.entries(o.machines).forEach(([m,md])=>{
+      const h=machHours(o,m);
+      if(!h||h<=0)return;
+      const s=absDayMachine(o,m);
+      placements[o.id][m]={};let rem=h,d=s;
+      while(rem>0){
+        const cap=getAvail(d,m);
+        if(cap>0){const t=Math.min(cap,rem);placements[o.id][m][d]=(placements[o.id][m][d]||0)+t;useAvail(d,m,t);rem-=t;}
+        d++;if(d>s+70)break;
+      }
+    });
+  });
+  const dayTotals={};
+  orders.forEach(o=>{if(!placements[o.id])return;Object.entries(placements[o.id]).forEach(([m,dm])=>Object.entries(dm).forEach(([d,h])=>{dayTotals[+d]=(dayTotals[+d]||0)+h;}));});
+  return{placements,dayTotals};
+}
+
+// ── Date helpers ──────────────────────────────────────────────────────────────
+function getMon(wo){const d=new Date(),day=d.getDay(),m=new Date(d);m.setDate(d.getDate()-(day===0?6:day-1)+wo*7);m.setHours(0,0,0,0);return m;}
+function shiftWeek(d){weekOffset+=d;render();}
+function goToday(){weekOffset=0;render();}
+function shiftMonth(d){monthOffset+=d;renderMonth();}
+function goMonthToday(){monthOffset=0;renderMonth();}
+function fd(d){return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});}
+function fday(d){return d.toLocaleDateString('en-US',{weekday:'short'});}
+function isToday(d){return d.toDateString()===new Date().toDateString();}
+function totalHrs(o){return Object.entries(o.machines).reduce((a,[m])=>a+machHours(o,m),0);}
+function wkLabel(wo){const m=getMon(wo),f=new Date(m);f.setDate(m.getDate()+6);return fd(m)+' – '+fd(f)+', '+f.getFullYear();}
+
+function switchTab(tab){
+  currentTab=tab;
+  ['calendar','month','jobs','machines'].forEach((v,i)=>{
+    document.querySelectorAll('.tab')[i].classList.toggle('active',v===tab);
+    document.getElementById('view-'+v).style.display=v===tab?'':'none';
+  });
+  if(tab==='jobs')renderJobs();else if(tab==='machines')renderMachines();else if(tab==='month')renderMonth();else render();
+}
+
+// ── Weekend modal ─────────────────────────────────────────────────────────────
+function openWkndModal(){
+  const weeks=Array.from({length:6},(_,i)=>weekOffset+i);
+  const rows=weeks.map(wo=>{
+    const mon=getMon(wo),sat=new Date(mon),sun=new Date(mon);
+    sat.setDate(mon.getDate()+5);sun.setDate(mon.getDate()+6);
+    return`<div class="wknd-row">
+      <div class="wknd-wlabel">Wk of ${fd(mon)}</div>
+      <div class="wknd-dinput"><label>Sat ${fd(sat)}</label><input type="number" min="0" max="24" id="wh-${wo}-5" value="${weekendHours[wo+'_5']||0}"></div>
+      <div class="wknd-dinput"><label>Sun ${fd(sun)}</label><input type="number" min="0" max="24" id="wh-${wo}-6" value="${weekendHours[wo+'_6']||0}"></div>
+    </div>`;
+  }).join('');
+  document.getElementById('modal-root').innerHTML=`<div class="modal-bg" onclick="closeModal(event)"><div class="modal wknd-modal" onclick="event.stopPropagation()">
+    <h3 class="wknd-hdr">📅 Weekend Hours</h3>
+    <p style="font-size:12px;color:#aaa;margin-bottom:14px;line-height:1.6">Enter hours available each weekend day. 0 = closed. Jobs will spill into open weekend days automatically.</p>
+    <div style="max-height:300px;overflow-y:auto">${rows}</div>
+    <div class="modal-actions"><button onclick="closeModal()">Cancel</button><button class="mbtn-wknd" onclick="applyWknd()">Save</button></div>
+  </div></div>`;
+}
+function applyWknd(){
+  Array.from({length:6},(_,i)=>weekOffset+i).forEach(wo=>{
+    [5,6].forEach(di=>{
+      const el=document.getElementById(`wh-${wo}-${di}`);
+      if(el){const v=parseInt(el.value)||0;const k=wo+'_'+di;if(v>0)weekendHours[k]=v;else delete weekendHours[k];}
+    });
+  });
+  saveWknd();closeModal();render();
+}
+
+// ── Calendar ──────────────────────────────────────────────────────────────────
+function render(){
+  if(currentTab!=='calendar')return;
+  const mon=getMon(weekOffset);
+  const days=Array.from({length:7},(_,i)=>{const d=new Date(mon);d.setDate(mon.getDate()+i);return d;});
+  document.getElementById('week-label').textContent=wkLabel(weekOffset);
+  const{placements,dayTotals}=computeSchedule();
+  const absStart=weekOffset*7;
+
+  const totals={};MACHINES.forEach(m=>totals[m]=0);
+  orders.forEach(o=>Object.entries(o.machines).forEach(([m])=>{totals[m]+=machHours(o,m);}));
+  const splits=orders.filter(o=>placements[o.id]&&Object.values(placements[o.id]).some(dm=>Object.keys(dm).length>1)).length;
+
+  document.getElementById('summary-bar').innerHTML=
+    `<div class="sum-card"><div class="sl">Orders</div><div class="sv">${orders.length}</div></div>`+
+    MACHINES.map(m=>`<div class="sum-card"><div class="sl">${m}</div><div class="sv">${totals[m].toFixed(1)}h</div></div>`).join('')+
+    (splits?`<div class="sum-card warn"><div class="sl">Split</div><div class="sv">${splits}</div></div>`:'');
+
+  const hdr=document.getElementById('cal-header');hdr.innerHTML='';
+  const c0=document.createElement('div');c0.className='cal-hcell';c0.style.cssText='text-align:left;padding-left:10px';c0.textContent='Machine';hdr.appendChild(c0);
+  days.forEach((d,di)=>{
+    const absD=absStart+di,isWk=WKND.includes(di),isOpen=wkndOpen(weekOffset,di);
+    const cap=wkndCap(weekOffset,di),dt=dayTotals[absD]||0;
+    const cc=document.createElement('div');
+    cc.className='cal-hcell'+(isToday(d)?' today-h':'')+(isWk?(isOpen?' wknd-open':' wknd-h'):'');
+    let capHtml=isWk&&!isOpen?`<div class="hcap-sub">Closed</div>`
+      :dt>0?`<div class="hcap ${dt<=cap?'cap-ok':'cap-over'}">${dt.toFixed(1)}/${cap}h</div>`
+      :isOpen?`<div class="hcap-sub">${cap}h avail</div>`:'';
+    cc.innerHTML=`<div>${fday(d)}</div><div class="hday">${fd(d)}</div>${capHtml}`;
+    hdr.appendChild(cc);
+  });
+
+  const body=document.getElementById('cal-body');body.innerHTML='';
+  MACHINES.forEach(machine=>{
+    const color=MCOLORS[machine];
+    const mht=orders.reduce((s,o)=>s+(o.machines[machine]||0),0);
+    const sec=document.createElement('div');sec.className='machine-section';sec.style.borderTopColor=color+'66';
+    const row=document.createElement('div');row.className='machine-row';
+    const lbl=document.createElement('div');lbl.className='mlabel';lbl.style.background=`linear-gradient(to right,${color}20,#f9fbfd)`;
+    lbl.innerHTML=`<div class="mlabel-strip" style="background:${color}"></div><div class="mlabel-name">${machine}</div><div class="mlabel-hrs">${mht>0?mht.toFixed(1)+'h total':'No jobs'}</div>`;
+    row.appendChild(lbl);
+    days.forEach((d,di)=>{
+      const absD=absStart+di,isWk=WKND.includes(di),isOpen=wkndOpen(weekOffset,di);
+      const cell=document.createElement('div');
+      cell.className='dcell'+(isToday(d)?' today-col':'')+(isWk?(isOpen?' wknd-col':' wknd-closed'):'');
+      if(isWk&&!isOpen){
+        const msg=document.createElement('div');msg.className='wknd-closed-msg';
+        msg.innerHTML='Closed<br><span style="color:#c39bd3;cursor:pointer;font-size:8px" onclick="openWkndModal()">Set hours</span>';
+        cell.appendChild(msg);
+      } else {
+        cell.addEventListener('dragover',e=>{e.preventDefault();cell.classList.add('drag-over');});
+        cell.addEventListener('dragleave',()=>cell.classList.remove('drag-over'));
+        cell.addEventListener('drop',e=>{
+          e.preventDefault();cell.classList.remove('drag-over');
+          if(dragId===null)return;
+          const o=orders.find(x=>x.id===dragId);if(!o)return;
+          // Shift all machine days by the same delta as the drag
+          const oldAbs=absDayOrder(o);
+          const delta=absD-oldAbs;
+          o.weekOffset=Math.floor(absD/7);o.day=absD%7;
+          Object.entries(o.machines).forEach(([m,md])=>{
+            if(md&&typeof md==='object'){
+              const machAbs=md.wo*7+md.day+delta;
+              md.wo=Math.floor(machAbs/7);md.day=((machAbs%7)+7)%7;
+            }
+          });
+          setSyncBusy('Moving...');persist().then(()=>{setSyncOk('Moved');render();});
+        });
+        orders.forEach(o=>{
+          if(!placements[o.id])return;
+          const pm=placements[o.id][machine];if(!pm||!pm[absD])return;
+          const ht=pm[absD],tmh=o.machines[machine],isSplit=Object.keys(pm).length>1;
+          const sc=o.rush?'#e74c3c':(STATUS_COLORS[o.status]||'#888');
+          const bg=o.rush?'#fdecea':(STATUS_BG[o.status]||'#eee');
+          const bl=document.createElement('div');bl.className='oblock'+(o.rush?' rush':'');
+          bl.draggable=true;
+          bl.style.background=bg;bl.style.borderLeftColor=sc;bl.style.borderTopColor=sc+'40';bl.style.borderRightColor=sc+'40';bl.style.borderBottomColor=sc+'40';
+          if(o.rush)bl.innerHTML=`<div class="rush-label">RUSH</div>`;
+          const fileChips=(o.files&&o.files.length)?'<div class="ob-files">'+o.files.map(f=>`<a class="ob-file-chip" href="${f.url}" target="_blank" onclick="event.stopPropagation()" style="background:${fileTypeColor(f.type)}22;color:${fileTypeColor(f.type)};border:1px solid ${fileTypeColor(f.type)}55" title="${f.label}">${fileTypeIcon(f.type)} ${f.label||f.type}</a>`).join('')+'</div>':'';
+          bl.innerHTML+=`<div class="ob-top"><div class="ob-name">${o.customer}</div><div class="ob-badge" style="background:${sc};color:#fff">${o.status}</div></div><div class="ob-row">${o.part}·Qty ${o.qty}</div><div class="ob-row" style="color:${color};font-weight:700">${ht}h on ${machine}</div><div class="ob-row">Due ${o.due||'—'}</div>${isSplit?`<div class="split-tag">▪ ${ht}h of ${tmh}h</div>`:''}${fileChips}`;
+          bl.addEventListener('dragstart',()=>{dragId=o.id;bl.classList.add('dragging');});
+          bl.addEventListener('dragend',()=>{bl.classList.remove('dragging');dragId=null;});
+          bl.onclick=e=>{if(!e.defaultPrevented)openEdit(o.id);};
+          cell.appendChild(bl);
+        });
+      }
+      row.appendChild(cell);
+    });
+    sec.appendChild(row);body.appendChild(sec);
+  });
+}
+
+// ── Month ─────────────────────────────────────────────────────────────────────
+function renderMonth(){
+  const now=new Date();
+  const bm=new Date(now.getFullYear(),now.getMonth()+monthOffset,1);
+  document.getElementById('month-label').textContent=bm.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  const{placements,dayTotals}=computeSchedule();
+  const mon0=getMon(0);
+  const hdr=document.getElementById('month-header');hdr.innerHTML='';
+  ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach((d,i)=>{const c=document.createElement('div');c.className='month-day-label'+(i>=5?' wknd':'');c.textContent=d;hdr.appendChild(c);});
+  const year=bm.getFullYear(),month=bm.getMonth();
+  const fl=new Date(year,month,1),ll=new Date(year,month+1,0);
+  let cur=new Date(fl);const fday2=fl.getDay();cur.setDate(fl.getDate()-(fday2===0?6:fday2-1));
+  const weeks=[];
+  while(cur<=ll||cur.getMonth()===month){
+    const wk=[];for(let i=0;i<7;i++){const d=new Date(cur);d.setDate(cur.getDate()+i);wk.push(new Date(d));}
+    weeks.push(wk);cur.setDate(cur.getDate()+7);
+    if(cur>ll&&weeks.length>=4&&wk[6]>=ll)break;
+  }
+  const grid=document.getElementById('month-grid');grid.innerHTML='';
+  weeks.forEach(wk=>{
+    const wr=document.createElement('div');wr.className='month-week';
+    wk.forEach((d,di)=>{
+      const cell=document.createElement('div');
+      const isWk=di>=5;
+      const diff=Math.round((d-mon0)/(864e5));
+      const wo=Math.floor(diff/7),dix=((diff%7)+7)%7;
+      const isOpen=isWk?wkndOpen(wo,dix):true;
+      cell.className='month-cell'+(isToday(d)?' today-month':'')+(d.getMonth()!==month?' past':'')+(isWk?(isOpen?' wknd-month':' wknd-closed-month'):'');
+      const absD=diff;
+      const dayOrders=orders.filter(o=>placements[o.id]&&Object.values(placements[o.id]).some(dm=>dm[absD]));
+      const dt=dayTotals[absD]||0,cap=isWk?wkndCap(wo,dix):16;
+      const capClass=dt===0?'':dt<=cap?'cap-ok':'cap-over';
+      const de=document.createElement('div');de.className='month-date'+(isToday(d)?' today-date':'')+(isWk?' wknd-date':'');
+      de.innerHTML=`<span>${d.getDate()}</span>${dt>0?`<span class="month-cap ${capClass}">${dt.toFixed(0)}h</span>`:''}`;
+      cell.appendChild(de);
+      if(isWk&&!isOpen){const m=document.createElement('div');m.style.cssText='font-size:9px;color:#bbb;cursor:pointer';m.textContent='Closed';m.onclick=()=>openWkndModal();cell.appendChild(m);}
+      else{
+        dayOrders.slice(0,3).forEach(o=>{
+          const sc=o.rush?'#e74c3c':(STATUS_COLORS[o.status]||'#888');
+          const bg=o.rush?'#fdecea':(STATUS_BG[o.status]||'#eee');
+          const b=document.createElement('div');b.className='month-block';
+          b.style.background=bg;b.style.borderLeftColor=sc;b.style.color=o.rush?'#c0392b':'#1a3a5c';
+          b.textContent=(o.rush?'🚨 ':'')+o.customer+(o.part?' · '+o.part.substring(0,10):'');
+          b.onclick=()=>openEdit(o.id);cell.appendChild(b);
+        });
+        if(dayOrders.length>3){const more=document.createElement('div');more.className='month-more';more.textContent=`+${dayOrders.length-3} more`;more.onclick=()=>{weekOffset=Math.floor(absD/7);switchTab('calendar');};cell.appendChild(more);}
+      }
+      wr.appendChild(cell);
+    });
+    grid.appendChild(wr);
+  });
+}
+
+// ── Jobs list ─────────────────────────────────────────────────────────────────
+function renderJobs(){
+  const search=(document.getElementById('search-box')?.value||'').toLowerCase();
+  const fs=document.getElementById('filter-status')?.value||'';
+  const fm=document.getElementById('filter-machine')?.value||'';
+  const mSel=document.getElementById('filter-machine');
+  if(mSel&&mSel.options.length===1)MACHINES.forEach(m=>{const op=document.createElement('option');op.textContent=m;mSel.appendChild(op);});
+  const filtered=orders.filter(o=>{
+    if(fs&&o.status!==fs)return false;if(fm&&!o.machines[fm])return false;
+    if(search&&!o.customer.toLowerCase().includes(search)&&!o.part.toLowerCase().includes(search))return false;return true;
+  }).sort((a,b)=>{if(a.rush&&!b.rush)return -1;if(!a.rush&&b.rush)return 1;return absDay(a)-absDay(b)||a.id-b.id;});
+  const tbody=document.getElementById('job-tbody');
+  if(!filtered.length){tbody.innerHTML=`<tr><td colspan="10" style="text-align:center;padding:24px;color:#888">No jobs found</td></tr>`;return;}
+  tbody.innerHTML=filtered.map((o,i)=>{
+    const sc=STATUS_COLORS[o.status]||'#888',bg=STATUS_BG[o.status]||'#eee',st=STATUS_TEXT[o.status]||'#333';
+    const dn=DAYNAMES7[o.day||0];
+    const pills=Object.entries(o.machines).map(([m])=>`<span class="mpill" style="background:${MCOLORS[m]}">${m.split(' ')[0]} ${machHours(o,m)}h</span>`).join('');
+    return`<tr onclick="openEdit(${o.id})"><td style="color:#aaa;font-size:11px">${i+1}</td><td style="text-align:center">${o.rush?'🚨':''}</td><td style="font-weight:700;color:#1a3a5c">${o.customer}</td><td>${o.part}</td><td>${o.qty}</td><td style="white-space:nowrap">${o.due||'—'}</td><td style="font-size:11px;white-space:nowrap">${dn}, Wk of ${fd(getMon(o.weekOffset||0))}</td><td><span class="badge" style="background:${bg};color:${st}">${o.status}</span></td><td>${pills}</td><td style="font-weight:700">${totalHrs(o).toFixed(1)}h</td></tr>`;
+  }).join('');
+}
+
+// ── Machines ──────────────────────────────────────────────────────────────────
+function renderMachines(){
+  const ms={};MACHINES.forEach(m=>{ms[m]={jobs:[],totalHrs:0};});
+  orders.forEach(o=>Object.entries(o.machines).forEach(([m])=>{
+    const h=machHours(o,m);
+    if(ms[m]&&h>0){ms[m].jobs.push({...o,machHrs:h});ms[m].totalHrs+=h;}
+  }));
+  const tah=MACHINES.reduce((s,m)=>s+ms[m].totalHrs,0);
+  document.getElementById('mach-totals').innerHTML='<div class="sum-card"><div class="sl">Orders</div><div class="sv">'+orders.length+'</div></div><div class="sum-card"><div class="sl">Machine Hours</div><div class="sv">'+tah.toFixed(1)+'h</div></div><div class="sum-card"><div class="sl">Active Machines</div><div class="sv">'+MACHINES.filter(m=>ms[m].totalHrs>0).length+'/'+MACHINES.length+'</div></div>';
+  const maxH=Math.max(...MACHINES.map(m=>ms[m].totalHrs),1);
+  document.getElementById('mach-cards').innerHTML=MACHINES.map(m=>{
+    const s=ms[m],color=MCOLORS[m],bg=MBGS[m],pct=Math.min(100,(s.totalHrs/maxH)*100);
+    const rows=s.jobs.length
+      ?s.jobs.slice(0,6).map(j=>'<div class="mach-jrow"><span style="color:#1a3a5c;font-weight:600">'+(j.rush?'🚨 ':'')+j.customer+' — '+j.part+'</span><span style="font-weight:700;color:'+color+'">'+Number(j.machHrs).toFixed(1)+'h</span></div>').join('')+(s.jobs.length>6?'<div style="font-size:10px;color:#aaa;padding-top:4px">+'+( s.jobs.length-6)+' more</div>':'')
+      :'<div style="font-size:11px;color:#aaa;padding-top:4px">No jobs scheduled</div>';
+    return'<div class="mach-card" style="border-top-color:'+color+'"><div class="mach-card-top"><div class="mach-icon" style="background:'+bg+'">'+MICONS[m]+'</div><div class="mach-title">'+m+'</div></div><div class="mach-stats"><div class="mach-stat"><div class="msl">Jobs</div><div class="msv" style="color:'+color+'">'+s.jobs.length+'</div></div><div class="mach-stat"><div class="msl">Hours</div><div class="msv" style="color:'+color+'">'+s.totalHrs.toFixed(1)+'h</div></div></div><div class="bar-track"><div class="bar-fill" style="width:'+pct.toFixed(1)+'%;background:'+color+'"></div></div><div class="mach-joblist">'+rows+'</div></div>';
+  }).join('');
+}
+
+// ── Modal ─────────────────────────────────────────────────────────────────────
+function openAdd(){showModal({customer:'',part:'',qty:'',due:'',status:'Scheduled',day:0,weekOffset:weekOffset,rush:false,machines:{}},null,false);}
+function openRush(){showModal({customer:'',part:'',qty:'',due:'',status:'Scheduled',day:0,weekOffset:weekOffset,rush:true,machines:{}},null,true);}
+function openEdit(id){const o=orders.find(x=>x.id===id);if(o)showModal({...o,machines:{...o.machines}},id,o.rush);}
+
+function showModal(data,editId,isRush){
+  // per-machine week/day now handled inside mFields
+  const statusOpts=['Scheduled','In Progress','Done','On Hold'].map(s=>`<option ${data.status===s?'selected':''}>${s}</option>`).join('');
+  const mFields=MACHINES.map(m=>{
+    const mk=m.replace(/[\s\/]/g,'_');
+    const md=data.machines[m];
+    const mh=md?(typeof md==='object'?md.h:md):'';
+    const mwo=md&&typeof md==='object'&&md.wo!==undefined?md.wo:(data.weekOffset||0);
+    const mday=md&&typeof md==='object'&&md.day!==undefined?md.day:(data.day||0);
+    const wkOpts=Array.from({length:10},(_,i)=>{const wo=weekOffset+i;return`<option value="${wo}" ${mwo===wo?'selected':''}>Wk ${fd(getMon(wo))}</option>`;}).join('');
+    const dayOpts2=DAYNAMES7.map((d,i)=>`<option value="${i}" ${mday===i?'selected':''}>${d}${i>=5?' (wknd)':''}</option>`).join('');
+    return`<div style="background:#0d1621;border-radius:7px;padding:8px 10px;margin-bottom:6px">
+      <div style="font-size:11px;font-weight:700;color:#c39bd3;margin-bottom:6px">${m}</div>
+      <div style="display:grid;grid-template-columns:80px 1fr 1fr;gap:5px;align-items:center">
+        <div><label style="font-size:10px;color:#aaa;display:block;margin-bottom:2px">Hours</label><input type="number" step="0.5" min="0" id="mh-${mk}" value="${mh}" placeholder="hrs" style="width:100%;font-size:12px;padding:5px 7px;border-radius:6px;border:1px solid #34495e;background:#141e2b;color:#ecf0f1"></div>
+        <div><label style="font-size:10px;color:#aaa;display:block;margin-bottom:2px">Week</label><select id="mw-${mk}" style="width:100%;font-size:11px;padding:5px 4px;border-radius:6px;border:1px solid #34495e;background:#141e2b;color:#ecf0f1">${wkOpts}</select></div>
+        <div><label style="font-size:10px;color:#aaa;display:block;margin-bottom:2px">Start Day</label><select id="md-${mk}" style="width:100%;font-size:11px;padding:5px 4px;border-radius:6px;border:1px solid #34495e;background:#141e2b;color:#ecf0f1">${dayOpts2}</select></div>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('modal-root').innerHTML=`<div class="modal-bg" onclick="closeModal(event)"><div class="modal ${isRush?'rush-modal':''}" onclick="event.stopPropagation()">
+    <h3 class="${isRush?'rush-hdr':''}">${isRush?'🚨 Rush Job':editId!==null?'✏️ Edit Order':'➕ Add Order'}</h3>
+    <div class="form-row"><label>Customer</label><input id="f-cust" value="${data.customer||''}" placeholder="Customer name"></div>
+    <div class="form-row"><label>Part / Job Name</label><input id="f-part" value="${data.part||''}" placeholder="Part or job description"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div class="form-row"><label>Quantity</label><input id="f-qty" type="number" value="${data.qty||''}" placeholder="50"></div>
+      <div class="form-row"><label>Due Date</label><input id="f-due" type="date" value="${data.due||''}"></div>
+    </div>
+    <div class="form-row"><label>Status</label><select id="f-status" style="background:#141e2b;color:#ecf0f1;border:1px solid #34495e">${statusOpts}</select></div>
+    <div style="font-size:11px;color:#aaa;margin-bottom:6px;padding:5px 8px;background:#0d1621;border-radius:6px">Set hours and start day individually per machine below. Leave hours blank if a machine isn't used.</div>
+    <div class="form-row"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;letter-spacing:0"><input type="checkbox" id="f-rush" ${data.rush?'checked':''} style="width:auto;margin:0"> <span style="color:#e74c3c;font-weight:700;font-size:12px">🚨 Rush Job — jumps to front of queue</span></label></div>
+    <div class="form-row"><label>Machine Hours &amp; Start Days</label>${mFields}</div>
+    <div class="modal-note">Hours over capacity carry to the next available day automatically.</div>
+    <div class="form-row" style="margin-top:10px">
+      <label>📎 Files (Google Drive links)</label>
+      <div id="file-list">${buildFileRows(data.files||[])}</div>
+      <button class="add-file-btn" onclick="addFileRow()">+ Add File Link</button>
+    </div>
+    <div class="modal-actions">
+      ${editId!==null&&editId!==undefined?`<button class="mbtn-del" onclick="doDelete(${editId})">Delete</button>`:''}
+      <button onclick="closeModal()">Cancel</button>
+      <button class="${isRush?'mbtn-rush':'mbtn-save'}" onclick="doSave(${editId===null||editId===undefined?'null':editId})">Save Order</button>
+    </div>
+  </div></div>`;
+}
+function closeModal(e){if(!e||e.target.classList.contains('modal-bg'))document.getElementById('modal-root').innerHTML='';}
+
+async function doSave(editId){
+  const machines={};
+  MACHINES.forEach(m=>{
+    const mk=m.replace(/[\s\/]/g,'_');
+    const v=parseFloat(document.getElementById('mh-'+mk).value);
+    if(!isNaN(v)&&v>0){
+      const wo=parseInt(document.getElementById('mw-'+mk).value)||0;
+      const day=parseInt(document.getElementById('md-'+mk).value)||0;
+      machines[m]={h:v,wo,day};
+    }
+  });
+  // Use earliest machine start as the order's reference day
+  const machDays=Object.values(machines).map(md=>md.wo*7+md.day);
+  const earliestAbs=machDays.length?Math.min(...machDays):weekOffset*7;
+  // Collect file links
+  const files=[];
+  document.querySelectorAll('.file-entry').forEach(row=>{
+    const url=row.querySelector('.file-url')?.value.trim();
+    const type=row.querySelector('.file-type')?.value||'File';
+    const label=row.querySelector('.file-label')?.value.trim()||type;
+    if(url)files.push({url,type,label});
+  });
+  const order={
+    customer:document.getElementById('f-cust').value.trim()||'Unnamed',
+    part:document.getElementById('f-part').value.trim()||'',
+    qty:parseInt(document.getElementById('f-qty').value)||0,
+    due:document.getElementById('f-due').value||'',
+    status:document.getElementById('f-status').value,
+    weekOffset:Math.floor(earliestAbs/7),
+    day:earliestAbs%7,
+    rush:document.getElementById('f-rush').checked,
+    machines,
+    files
+  };
+  closeModal();setSyncBusy();
+  if(editId!==null&&editId!=='null'){
+    const i=orders.findIndex(x=>x.id===Number(editId));
+    if(i>=0){order.id=Number(editId);orders[i]=order;}
+  } else {
+    order.id=nextId++;
+    orders.push(order);
+  }
+  await persist();
+  render();
+  showOk('Order saved');
+}
+
+async function doDelete(id){
+  if(!confirm('Delete this order?'))return;
+  closeModal();setSyncBusy('Deleting...');
+  orders=orders.filter(x=>x.id!==Number(id));
+  await persist();
+  render();
+  showOk('Order deleted');
+}
+
+// ── File Attachments ──────────────────────────────────────────────────────────
+const FILE_TYPES=['DXF','PDF','STEP','IGES','Drawing','Photo','Other'];
+function fileTypeColor(t){
+  return{DXF:'#2980b9',PDF:'#e74c3c',STEP:'#8e44ad',IGES:'#16a085',Drawing:'#e67e22',Photo:'#27ae60',Other:'#7f8c8d'}[t]||'#7f8c8d';
+}
+function fileTypeIcon(t){
+  return{DXF:'📐',PDF:'📄',STEP:'🧊',IGES:'🧊',Drawing:'📋',Photo:'🖼️',Other:'📎'}[t]||'📎';
+}
+
+function buildFileRows(files){
+  if(!files||!files.length)return'';
+  return files.map((f,i)=>fileRowHTML(f,i)).join('');
+}
+
+function fileRowHTML(f,i){
+  const typeOpts=FILE_TYPES.map(t=>`<option ${f.type===t?'selected':''}>${t}</option>`).join('');
+  return`<div class="file-entry" data-i="${i}">
+    <div class="file-row">
+      <select class="file-type">${typeOpts}</select>
+      <input class="file-label" placeholder="Label (e.g. Main DXF)" value="${f.label||''}">
+      <button class="file-del-btn" onclick="this.closest('.file-entry').remove()" title="Remove">✕</button>
+    </div>
+    <div class="file-row" style="margin-top:-2px">
+      <input class="file-url" placeholder="Paste Google Drive share link…" value="${f.url||''}" style="font-size:11px;color:#aaa">
+    </div>
+  </div>`;
+}
+
+function addFileRow(){
+  const list=document.getElementById('file-list');
+  const div=document.createElement('div');
+  div.innerHTML=fileRowHTML({type:'DXF',label:'',url:''},Date.now());
+  list.appendChild(div.firstElementChild);
+}
+
+// ── Import Quote ──────────────────────────────────────────────────────────────
+let importRows=[];
+
+function openImport(){
+  document.getElementById('modal-root').innerHTML=`<div class="modal-bg" onclick="closeModal(event)"><div class="modal" style="width:560px;border:2px solid #117a65" onclick="event.stopPropagation()">
+    <h3 style="color:#2ecc71">📥 Import Quote CSV</h3>
+    <p style="font-size:12px;color:#aaa;margin-bottom:12px;line-height:1.6">Drop a quote CSV exported from your quoting software. Each line item becomes a separate scheduler order.</p>
+    <div class="import-drop" id="import-drop" onclick="document.getElementById('import-file').click()">
+      <div style="font-size:28px;margin-bottom:6px">📂</div>
+      <div>Drop CSV here or click to browse</div>
+      <input type="file" id="import-file" accept=".csv" style="display:none" onchange="handleImportFile(this.files[0])">
+    </div>
+    <div id="import-preview"></div>
+    <div class="modal-actions">
+      <button onclick="closeModal()">Cancel</button>
+      <button class="mbtn-import" id="import-go-btn" style="display:none" onclick="doImport()">Add to Scheduler</button>
+    </div>
+  </div></div>`;
+  const dz=document.getElementById('import-drop');
+  dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over');});
+  dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
+  dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('over');const f=e.dataTransfer.files[0];if(f)handleImportFile(f);});
+}
+
+function handleImportFile(file){
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{importRows=parseQuoteCSV(e.target.result);renderImportPreview();}
+    catch(ex){document.getElementById('import-preview').innerHTML=`<div style="color:#e74c3c;font-size:12px;padding:10px">Could not parse CSV: ${ex.message}</div>`;}
+  };
+  reader.readAsText(file);
+}
+
+function parseQuoteCSV(text){
+  text=text.replace(/^\uFEFF/,'');
+  const lines=text.split(/\r?\n/).filter(l=>l.trim());
+  if(lines.length<2)throw new Error('CSV appears empty');
+  const hdr=csvSplitLine(lines[0]);
+  const col=n=>hdr.findIndex(h=>h.trim().toLowerCase()===n.toLowerCase());
+  const iName=col('Name'),iQty=col('Quantity'),iMat=col('Material'),
+        iThk=col('Thickness'),iDue=col('Required shipping date'),
+        iCust=col('Customer name'),iWO=col('Work order number'),
+        iQuote=col('Quote name'),iPrice=col('Line price'),iType=col('Type');
+  const rows=[];
+  for(let i=1;i<lines.length;i++){
+    const c=csvSplitLine(lines[i]);
+    if(!c[iName]||c[iName].trim()==='')continue;
+    const name=c[iName]?.trim()||'';
+    const qty=parseInt(c[iQty])||1;
+    const mat=c[iMat]?.trim()||'';
+    const thk=parseFloat(c[iThk])||0;
+    const matLabel=mat+(thk?` ${thk}"`:'');
+    const cust=iCust>=0?c[iCust]?.trim()||'':'';
+    const wo=iWO>=0?c[iWO]?.trim()||'':'';
+    const price=iPrice>=0?parseFloat(c[iPrice])||0:0;
+    const type=iType>=0?c[iType]?.trim():'Part';
+    let due='';
+    if(iDue>=0&&c[iDue]){const dp=new Date(c[iDue]);if(!isNaN(dp))due=dp.toISOString().slice(0,10);}
+    const sugMach=guessMachine(mat,thk,type,name);
+    rows.push({name,qty,matLabel,cust,wo,price,due,sugMach,skip:false});
+  }
+  if(!rows.length)throw new Error('No valid line items found');
+  return rows;
+}
+
+function guessMachine(mat,thk,type,name){
+  const nl=name.toLowerCase();
+  if(type==='Item'||(!mat&&!thk))return'Miscellaneous';
+  if(nl.includes('tube')||nl.includes('pipe'))return'Tube Laser';
+  return'Flat Laser';
+}
+
+function csvSplitLine(line){
+  const out=[];let cur='',inQ=false;
+  for(let i=0;i<line.length;i++){
+    const ch=line[i];
+    if(ch==='"'){if(inQ&&line[i+1]==='"'){cur+='"';i++;}else inQ=!inQ;}
+    else if(ch===','&&!inQ){out.push(cur);cur='';}
+    else cur+=ch;
+  }
+  out.push(cur);return out;
+}
+
+function renderImportPreview(){
+  const preview=document.getElementById('import-preview');
+  if(!importRows.length){preview.innerHTML='<div style="color:#aaa;font-size:12px">No rows to import.</div>';return;}
+  const hdr=`<div class="import-row import-row-hdr" style="background:none;padding:4px 10px"><div>Part / Job</div><div>Machine</div><div style="text-align:center">Qty</div></div>`;
+  const rowsHtml=importRows.map((r,i)=>{
+    const selOpts=MACHINES.map(m=>`<option value="${m}" ${r.sugMach===m?'selected':''}>${m}</option>`).join('');
+    return`<div class="import-row">
+      <div>
+        <div style="font-weight:700;color:#ecf0f1;margin-bottom:2px">${r.name}</div>
+        <div style="color:#7f8c8d;font-size:10px">${r.cust}${r.wo?' · '+r.wo:''}${r.matLabel?' · '+r.matLabel:''}${r.due?' · Due '+r.due:''}${r.price?' · $'+r.price.toFixed(2):''}</div>
+        <label style="display:flex;align-items:center;gap:5px;margin-top:3px;cursor:pointer"><input type="checkbox" class="import-chk" ${r.skip?'':'checked'} onchange="importRows[${i}].skip=!this.checked;renderImportPreview()"><span style="font-size:10px;color:#aaa">Include</span></label>
+      </div>
+      <div><select class="import-msel" id="imp-mach-${i}">${selOpts}</select></div>
+      <div><input type="number" class="import-qty" id="imp-qty-${i}" value="${r.qty}" min="1"></div>
+    </div>`;
+  }).join('');
+  const included=importRows.filter(r=>!r.skip).length;
+  preview.innerHTML=`<div style="font-size:12px;color:#aaa;margin-bottom:8px">${importRows.length} line item${importRows.length!==1?'s':''} found · <strong style="color:#2ecc71">${included} selected</strong></div>${hdr}${rowsHtml}`;
+  document.getElementById('import-go-btn').style.display=included?'':'none';
+  document.getElementById('import-go-btn').textContent=`Add ${included} Order${included!==1?'s':''} to Scheduler`;
+}
+
+async function doImport(){
+  const toAdd=[];
+  importRows.forEach((r,i)=>{
+    if(r.skip)return;
+    const mach=document.getElementById(`imp-mach-${i}`)?.value||r.sugMach;
+    const qty=parseInt(document.getElementById(`imp-qty-${i}`)?.value)||r.qty;
+    const machines={};
+    machines[mach]={h:0,wo:weekOffset,day:0};
+    toAdd.push({id:nextId++,customer:r.cust||'Unknown',part:r.name+(r.wo?' ['+r.wo+']':''),qty,due:r.due||'',status:'Scheduled',weekOffset,day:0,rush:false,machines,files:[]});
+  });
+  if(!toAdd.length)return;
+  closeModal();setSyncBusy('Importing...');
+  orders.push(...toAdd);
+  await persist();render();
+  showOk(`Imported ${toAdd.length} order${toAdd.length!==1?'s':''} from quote`);
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+loadWknd();
+// Credentials hardcoded
+BIN_ID='69ee553baaba8821973d9c8c';API_KEY='$2a$10$tP0A0hzHlVszmIz5vaWrK.NFp1d4y/7OXF8k3A3J71tp4ZOXGv4au';
+document.getElementById('app').style.display='';
+loadData();
+</script>
+</body>
+</html>
