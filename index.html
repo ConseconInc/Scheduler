@@ -175,6 +175,8 @@ body{font-family:Arial,sans-serif;background:#f4f6f9;color:#222;font-size:14px}
 .ob-files{margin-top:4px;display:flex;flex-wrap:wrap;gap:2px}
 .ob-file-chip{font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700;cursor:pointer;border:none;text-decoration:none;display:inline-block}
 .ob-file-chip:hover{opacity:.75}
+.add-file-btn{font-size:11px;padding:5px 12px;border-radius:6px;border:1px dashed #34495e;background:none;color:#aaa;cursor:pointer;margin-top:4px;width:100%}
+.add-file-btn:hover{border-color:#2980b9;color:#2980b9}
 .upload-zone{border:2px dashed #2ecc71;border-radius:8px;padding:14px;margin-bottom:8px;text-align:center;cursor:pointer;color:#aaa;font-size:12px;transition:background .15s;position:relative}
 .upload-zone:hover,.upload-zone.over{background:#0d2a1f;border-color:#27ae60;color:#2ecc71}
 .upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
@@ -701,14 +703,8 @@ function showModal(data,editId,isRush){
     <div class="modal-note">Hours over capacity carry to the next available day automatically.</div>
     <div class="form-row" style="margin-top:10px">
       <label>📎 Files</label>
-      <div class="upload-zone" id="upload-zone">
-        <input type="file" id="upload-input" multiple accept=".dxf,.pdf,.step,.stp,.iges,.igs,.dwg,.png,.jpg,.jpeg" onchange="handleFileUpload(this.files)">
-        <div style="font-size:22px;margin-bottom:4px">📂</div>
-        <div>Drag &amp; drop files here or click to browse</div>
-        <div style="font-size:10px;margin-top:4px;color:#555">DXF · PDF · STEP · IGES · DWG · Images</div>
-      </div>
-      <div id="upload-progress"></div>
       <div id="file-list">${buildFileRows(data.files||[])}</div>
+      <button type="button" class="add-file-btn" onclick="addFileRow()">+ Add File</button>
     </div>
     <div class="modal-actions">
       ${editId!==null&&editId!==undefined?`<button class="mbtn-del" onclick="doDelete(${editId})">Delete</button>`:''}
@@ -736,9 +732,9 @@ async function doSave(editId){
   const earliestAbs=machDays.length?Math.min(...machDays):weekOffset*7;
   const files=[];
   document.querySelectorAll('.file-entry').forEach(row=>{
-    const url=row.dataset.url;
-    const type=row.querySelector('.file-type')?.value||'Other';
-    const label=row.querySelector('.file-entry-name')?.textContent.trim()||type;
+    const url=(row.querySelector('.file-url')?.value||'').trim();
+    const type=row.querySelector('.file-type')?.value||'PDF';
+    const label=(row.querySelector('.file-label')?.value||'').trim()||type;
     if(url)files.push({url,type,label});
   });
   const order={
@@ -777,55 +773,35 @@ async function doDelete(id){
 
 
 // ── File Attachments ──────────────────────────────────────────────────────────
-const FILE_TYPES=['DXF','PDF','STEP','IGES','DWG','Drawing','Photo','Other'];
-function fileTypeColor(t){return{DXF:'#2980b9',PDF:'#e74c3c',STEP:'#8e44ad',IGES:'#16a085',DWG:'#d35400',Drawing:'#e67e22',Photo:'#27ae60',Other:'#7f8c8d'}[t]||'#7f8c8d';}
-function fileTypeIcon(t){return{DXF:'📐',PDF:'📄',STEP:'🧊',IGES:'🧊',DWG:'📐',Drawing:'📋',Photo:'🖼️',Other:'📎'}[t]||'📎';}
-function guessFileType(name){const ext=(name.split('.').pop()||'').toLowerCase();return{dxf:'DXF',pdf:'PDF',step:'STEP',stp:'STEP',iges:'IGES',igs:'IGES',dwg:'DWG',png:'Photo',jpg:'Photo',jpeg:'Photo'}[ext]||'Other';}
-function buildFileRows(files){if(!files||!files.length)return'';return files.map(f=>fileEntryHTML(f)).join('');}
-function fileEntryHTML(f){
+const FILE_TYPES=['PDF','DXF','STEP','IGES','DWG','Drawing','Photo','Other'];
+function fileTypeColor(t){return{PDF:'#e74c3c',DXF:'#2980b9',STEP:'#8e44ad',IGES:'#16a085',DWG:'#d35400',Drawing:'#e67e22',Photo:'#27ae60',Other:'#7f8c8d'}[t]||'#7f8c8d';}
+function fileTypeIcon(t){return{PDF:'📄',DXF:'📐',STEP:'🧊',IGES:'🧊',DWG:'📐',Drawing:'📋',Photo:'🖼️',Other:'📎'}[t]||'📎';}
+
+function buildFileRows(files){
+  if(!files||!files.length)return'';
+  return files.map(f=>fileRowHTML(f)).join('');
+}
+
+function fileRowHTML(f){
   const typeOpts=FILE_TYPES.map(t=>`<option ${f.type===t?'selected':''}>${t}</option>`).join('');
-  const color=fileTypeColor(f.type);
-  return`<div class="file-entry" data-url="${f.url}">
-    <div style="font-size:20px">${fileTypeIcon(f.type)}</div>
-    <div class="file-entry-info">
-      <div class="file-entry-name" title="${f.label}">${f.label||f.url}</div>
-      <div class="file-entry-type"><select class="file-type" style="font-size:10px;padding:2px 4px;border-radius:4px;border:1px solid #34495e;background:#141e2b;color:#ecf0f1">${typeOpts}</select></div>
+  return`<div class="file-entry" style="background:#0d1621;border-radius:7px;padding:8px 10px;margin-bottom:6px">
+    <div style="display:flex;gap:6px;align-items:center;margin-bottom:5px">
+      <select class="file-type" style="font-size:11px;padding:4px 6px;border-radius:5px;border:1px solid #34495e;background:#141e2b;color:#ecf0f1;width:90px">${typeOpts}</select>
+      <input class="file-label" placeholder="Label (e.g. Shop Drawing)" value="${f.label||''}" style="flex:1;font-size:12px;padding:5px 8px;border-radius:5px;border:1px solid #34495e;background:#141e2b;color:#ecf0f1">
+      <button style="background:none;border:none;color:#e74c3c;font-size:16px;cursor:pointer;padding:0 2px;line-height:1" onclick="this.closest('.file-entry').remove()" title="Remove">✕</button>
     </div>
-    <a href="${f.url}" target="_blank" style="color:${color};font-size:11px;font-weight:700;text-decoration:none;padding:3px 8px;border:1px solid ${color}44;border-radius:5px;white-space:nowrap" onclick="event.stopPropagation()">Open</a>
-    <button class="file-del-btn" onclick="this.closest('.file-entry').remove()" title="Remove">✕</button>
+    <input class="file-url" placeholder="Paste Google Drive share link…" value="${f.url||''}" style="width:100%;font-size:11px;padding:5px 8px;border-radius:5px;border:1px solid #34495e;background:#141e2b;color:#aaa">
   </div>`;
 }
-async function handleFileUpload(fileList){
-  const prog=document.getElementById('upload-progress');
+
+function addFileRow(){
   const list=document.getElementById('file-list');
-  for(const file of Array.from(fileList)){
-    const label=file.name,type=guessFileType(file.name);
-    const pEl=document.createElement('div');pEl.className='upload-progress';pEl.textContent=`⏫ Uploading ${label}...`;prog.appendChild(pEl);
-    try{
-      const url=await uploadToUploadcare(file);
-      pEl.remove();
-      const div=document.createElement('div');div.innerHTML=fileEntryHTML({url,label:file.name,type});list.appendChild(div.firstElementChild);
-    }catch(e){pEl.style.color='#e74c3c';pEl.textContent=`❌ Failed: ${label} — ${e.message}`;setTimeout(()=>pEl.remove(),5000);}
-  }
+  const div=document.createElement('div');
+  div.innerHTML=fileRowHTML({type:'PDF',label:'',url:''});
+  list.appendChild(div.firstElementChild);
 }
-async function uploadToUploadcare(file){
-  const fd=new FormData();
-  fd.append('UPLOADCARE_PUB_KEY','4385c0e1769b894e7a77');
-  fd.append('UPLOADCARE_STORE','1');
-  fd.append('file',file);
-  const r=await fetch('https://upload.uploadcare.com/base/',{method:'POST',body:fd});
-  if(!r.ok)throw new Error('HTTP '+r.status);
-  const j=await r.json();
-  if(!j.file)throw new Error('No file UUID returned');
-  return`https://ucarecdn.com/${j.file}/`;
-}
-function initUploadZone(){
-  const zone=document.getElementById('upload-zone');
-  if(!zone)return;
-  zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('over');});
-  zone.addEventListener('dragleave',()=>zone.classList.remove('over'));
-  zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('over');handleFileUpload(e.dataTransfer.files);});
-}
+
+function initUploadZone(){} // no-op, kept for compatibility
 
 // ── Import Quote ──────────────────────────────────────────────────────────────
 let importRows=[];
