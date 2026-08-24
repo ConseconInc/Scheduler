@@ -804,7 +804,7 @@ async function handleFileUpload(fileList){
     try{
       const url=await uploadToUploadcare(file);
       pEl.remove();
-      const div=document.createElement('div');div.innerHTML=fileEntryHTML({url,label,type});list.appendChild(div.firstElementChild);
+      const div=document.createElement('div');div.innerHTML=fileEntryHTML({url,label:file.name,type});list.appendChild(div.firstElementChild);
     }catch(e){pEl.style.color='#e74c3c';pEl.textContent=`❌ Failed: ${label} — ${e.message}`;setTimeout(()=>pEl.remove(),5000);}
   }
 }
@@ -817,7 +817,7 @@ async function uploadToUploadcare(file){
   if(!r.ok)throw new Error('HTTP '+r.status);
   const j=await r.json();
   if(!j.file)throw new Error('No file UUID returned');
-  return`https://ucarecdn.com/${j.file}/${encodeURIComponent(file.name)}`;
+  return`https://ucarecdn.com/${j.file}/`;
 }
 function initUploadZone(){
   const zone=document.getElementById('upload-zone');
