@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Shop Scheduler</title>
 <script src="https://ucarecdn.com/libs/widget/3.x/uploadcare.full.min.js" charset="utf-8"></script>
-<script>UPLOADCARE_PUBLIC_KEY='4385c0e1769b894e7a77';UPLOADCARE_LOCALE='en';UPLOADCARE_TABS='file drag-and-drop';</script>
+<script>UPLOADCARE_PUBLIC_KEY='4385c0e1769b894e7a77';</script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:Arial,sans-serif;background:#f4f6f9;color:#222;font-size:14px}
@@ -17,36 +17,6 @@ body{font-family:Arial,sans-serif;background:#f4f6f9;color:#222;font-size:14px}
 .add-btn{background:#2980b9 !important;border-color:#2980b9 !important;font-weight:700}
 .rush-btn{background:#c0392b !important;border-color:#c0392b !important;font-weight:700}
 .weekend-btn{background:#6c3483 !important;border-color:#6c3483 !important;font-weight:700}
-.import-btn{background:#117a65 !important;border-color:#117a65 !important;font-weight:700}
-.import-drop{border:2px dashed #2ecc71;border-radius:10px;padding:30px 20px;text-align:center;cursor:pointer;color:#aaa;font-size:13px;transition:background .15s;margin-bottom:10px}
-.import-drop.over{background:#0d2a1f;border-color:#27ae60}
-.import-row{display:grid;grid-template-columns:1fr 1fr 80px;gap:6px;align-items:center;background:#0d1621;border-radius:6px;padding:7px 10px;margin-bottom:5px;font-size:11px}
-.import-row-hdr{font-size:10px;color:#7f8c8d;font-weight:700;text-transform:uppercase;letter-spacing:.4px}
-.import-chk{accent-color:#2ecc71;width:16px;height:16px}
-.import-msel{font-size:11px;padding:3px 5px;border-radius:5px;border:1px solid #34495e;background:#141e2b;color:#ecf0f1;width:100%}
-.import-qty{font-size:11px;padding:3px 6px;border-radius:5px;border:1px solid #34495e;background:#141e2b;color:#ecf0f1;width:60px}
-.mbtn-import{background:#117a65 !important;border-color:#117a65 !important;color:#fff !important}
-.file-row{display:flex;gap:6px;align-items:center;margin-bottom:6px}
-.file-row input{flex:1;font-size:12px;padding:6px 9px;border-radius:6px;border:1px solid #34495e;background:#141e2b;color:#ecf0f1}
-.file-row input::placeholder{color:#555}
-.file-type-sel{font-size:11px;padding:6px 5px;border-radius:6px;border:1px solid #34495e;background:#141e2b;color:#ecf0f1;width:90px}
-.file-del-btn{background:none;border:none;color:#e74c3c;font-size:15px;cursor:pointer;padding:0 4px;line-height:1}
-.file-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:4px 10px;border-radius:5px;cursor:pointer;text-decoration:none;border:none;margin:2px;white-space:nowrap}
-.file-badge:hover{opacity:.8}
-.add-file-btn{font-size:11px;padding:5px 12px;border-radius:6px;border:1px dashed #34495e;background:none;color:#aaa;cursor:pointer;margin-top:2px}
-.add-file-btn:hover{border-color:#2980b9;color:#2980b9}
-.ob-files{margin-top:4px;display:flex;flex-wrap:wrap;gap:2px}
-.ob-file-chip{font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700;cursor:pointer;border:none;text-decoration:none;display:inline-block}
-.ob-file-chip:hover{opacity:.75}
-.upload-zone{border:2px dashed #2ecc71;border-radius:8px;padding:14px;margin-bottom:8px;text-align:center;cursor:pointer;color:#aaa;font-size:12px;transition:background .15s;position:relative}
-.upload-zone:hover,.upload-zone.over{background:#0d2a1f;border-color:#27ae60;color:#2ecc71}
-.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
-.upload-progress{font-size:11px;color:#f39c12;margin-top:4px}
-.file-entry{background:#0d1621;border-radius:7px;padding:8px 10px;margin-bottom:6px;display:flex;align-items:center;gap:8px}
-.file-entry-info{flex:1;min-width:0}
-.file-entry-name{font-size:11px;font-weight:700;color:#ecf0f1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.file-entry-type{font-size:10px;color:#7f8c8d;margin-top:2px}
-.file-entry select{font-size:11px;padding:3px 5px;border-radius:5px;border:1px solid #34495e;background:#141e2b;color:#ecf0f1;width:80px;flex-shrink:0}
 .sync-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:middle}
 .sync-ok{background:#2ecc71}.sync-err{background:#e74c3c}.sync-busy{background:#f39c12;animation:pulse 1s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
@@ -192,6 +162,28 @@ body{font-family:Arial,sans-serif;background:#f4f6f9;color:#222;font-size:14px}
 .wknd-dinput{display:flex;align-items:center;gap:5px}
 .wknd-dinput label{font-size:11px;color:#aaa;white-space:nowrap}
 .wknd-dinput input{width:56px;font-size:12px;padding:5px 7px;border-radius:6px;border:1px solid #34495e;background:#141e2b;color:#ecf0f1}
+
+.import-btn{background:#117a65 !important;border-color:#117a65 !important;font-weight:700}
+.import-drop{border:2px dashed #2ecc71;border-radius:10px;padding:30px 20px;text-align:center;cursor:pointer;color:#aaa;font-size:13px;transition:background .15s;margin-bottom:10px}
+.import-drop.over{background:#0d2a1f;border-color:#27ae60}
+.import-row{display:grid;grid-template-columns:1fr 1fr 80px;gap:6px;align-items:center;background:#0d1621;border-radius:6px;padding:7px 10px;margin-bottom:5px;font-size:11px}
+.import-row-hdr{font-size:10px;color:#7f8c8d;font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.import-chk{accent-color:#2ecc71;width:16px;height:16px}
+.import-msel{font-size:11px;padding:3px 5px;border-radius:5px;border:1px solid #34495e;background:#141e2b;color:#ecf0f1;width:100%}
+.import-qty{font-size:11px;padding:3px 6px;border-radius:5px;border:1px solid #34495e;background:#141e2b;color:#ecf0f1;width:60px}
+.mbtn-import{background:#117a65 !important;border-color:#117a65 !important;color:#fff !important}
+.ob-files{margin-top:4px;display:flex;flex-wrap:wrap;gap:2px}
+.ob-file-chip{font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700;cursor:pointer;border:none;text-decoration:none;display:inline-block}
+.ob-file-chip:hover{opacity:.75}
+.upload-zone{border:2px dashed #2ecc71;border-radius:8px;padding:14px;margin-bottom:8px;text-align:center;cursor:pointer;color:#aaa;font-size:12px;transition:background .15s;position:relative}
+.upload-zone:hover,.upload-zone.over{background:#0d2a1f;border-color:#27ae60;color:#2ecc71}
+.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upload-progress{font-size:11px;color:#f39c12;margin-top:4px;min-height:4px}
+.file-entry{background:#0d1621;border-radius:7px;padding:8px 10px;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.file-entry-info{flex:1;min-width:0}
+.file-entry-name{font-size:11px;font-weight:700;color:#ecf0f1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.file-entry-type{font-size:10px;color:#7f8c8d;margin-top:2px}
+.file-del-btn{background:none;border:none;color:#e74c3c;font-size:15px;cursor:pointer;padding:0 4px;line-height:1}
 </style>
 </head>
 <body>
@@ -555,14 +547,14 @@ function render(){
         orders.forEach(o=>{
           if(!placements[o.id])return;
           const pm=placements[o.id][machine];if(!pm||!pm[absD])return;
-          const ht=pm[absD],tmh=o.machines[machine],isSplit=Object.keys(pm).length>1;
+          const ht=pm[absD],tmh=machHours(o,machine),isSplit=Object.keys(pm).length>1;
           const sc=o.rush?'#e74c3c':(STATUS_COLORS[o.status]||'#888');
           const bg=o.rush?'#fdecea':(STATUS_BG[o.status]||'#eee');
           const bl=document.createElement('div');bl.className='oblock'+(o.rush?' rush':'');
           bl.draggable=true;
           bl.style.background=bg;bl.style.borderLeftColor=sc;bl.style.borderTopColor=sc+'40';bl.style.borderRightColor=sc+'40';bl.style.borderBottomColor=sc+'40';
           if(o.rush)bl.innerHTML=`<div class="rush-label">RUSH</div>`;
-          const fileChips=(o.files&&o.files.length)?'<div class="ob-files">'+o.files.map(f=>`<a class="ob-file-chip" href="${f.url}" target="_blank" onclick="event.stopPropagation()" style="background:${fileTypeColor(f.type)}22;color:${fileTypeColor(f.type)};border:1px solid ${fileTypeColor(f.type)}55" title="${f.label}">${fileTypeIcon(f.type)} ${f.label||f.type}</a>`).join('')+'</div>':'';
+          const fileChips=(o.files&&o.files.length)?'<div class="ob-files">'+o.files.map(f=>'<a class="ob-file-chip" href="'+f.url+'" target="_blank" onclick="event.stopPropagation()" style="background:'+fileTypeColor(f.type)+'22;color:'+fileTypeColor(f.type)+';border:1px solid '+fileTypeColor(f.type)+'55" title="'+f.label+'">'+fileTypeIcon(f.type)+' '+( f.label||f.type)+'</a>').join('')+'</div>':'';
           bl.innerHTML+=`<div class="ob-top"><div class="ob-name">${o.customer}</div><div class="ob-badge" style="background:${sc};color:#fff">${o.status}</div></div><div class="ob-row">${o.part}·Qty ${o.qty}</div><div class="ob-row" style="color:${color};font-weight:700">${ht}h on ${machine}</div><div class="ob-row">Due ${o.due||'—'}</div>${isSplit?`<div class="split-tag">▪ ${ht}h of ${tmh}h</div>`:''}${fileChips}`;
           bl.addEventListener('dragstart',()=>{dragId=o.id;bl.classList.add('dragging');});
           bl.addEventListener('dragend',()=>{bl.classList.remove('dragging');dragId=null;});
@@ -742,11 +734,10 @@ async function doSave(editId){
   // Use earliest machine start as the order's reference day
   const machDays=Object.values(machines).map(md=>md.wo*7+md.day);
   const earliestAbs=machDays.length?Math.min(...machDays):weekOffset*7;
-  // Collect file links
   const files=[];
   document.querySelectorAll('.file-entry').forEach(row=>{
     const url=row.dataset.url;
-    const type=row.querySelector('.file-type')?.value||'File';
+    const type=row.querySelector('.file-type')?.value||'Other';
     const label=row.querySelector('.file-entry-name')?.textContent.trim()||type;
     if(url)files.push({url,type,label});
   });
@@ -784,24 +775,13 @@ async function doDelete(id){
   showOk('Order deleted');
 }
 
+
 // ── File Attachments ──────────────────────────────────────────────────────────
 const FILE_TYPES=['DXF','PDF','STEP','IGES','DWG','Drawing','Photo','Other'];
-function fileTypeColor(t){
-  return{DXF:'#2980b9',PDF:'#e74c3c',STEP:'#8e44ad',IGES:'#16a085',DWG:'#d35400',Drawing:'#e67e22',Photo:'#27ae60',Other:'#7f8c8d'}[t]||'#7f8c8d';
-}
-function fileTypeIcon(t){
-  return{DXF:'📐',PDF:'📄',STEP:'🧊',IGES:'🧊',DWG:'📐',Drawing:'📋',Photo:'🖼️',Other:'📎'}[t]||'📎';
-}
-function guessFileType(name){
-  const ext=(name.split('.').pop()||'').toLowerCase();
-  return{dxf:'DXF',pdf:'PDF',step:'STEP',stp:'STEP',iges:'IGES',igs:'IGES',dwg:'DWG',png:'Photo',jpg:'Photo',jpeg:'Photo'}[ext]||'Other';
-}
-
-function buildFileRows(files){
-  if(!files||!files.length)return'';
-  return files.map(f=>fileEntryHTML(f)).join('');
-}
-
+function fileTypeColor(t){return{DXF:'#2980b9',PDF:'#e74c3c',STEP:'#8e44ad',IGES:'#16a085',DWG:'#d35400',Drawing:'#e67e22',Photo:'#27ae60',Other:'#7f8c8d'}[t]||'#7f8c8d';}
+function fileTypeIcon(t){return{DXF:'📐',PDF:'📄',STEP:'🧊',IGES:'🧊',DWG:'📐',Drawing:'📋',Photo:'🖼️',Other:'📎'}[t]||'📎';}
+function guessFileType(name){const ext=(name.split('.').pop()||'').toLowerCase();return{dxf:'DXF',pdf:'PDF',step:'STEP',stp:'STEP',iges:'IGES',igs:'IGES',dwg:'DWG',png:'Photo',jpg:'Photo',jpeg:'Photo'}[ext]||'Other';}
+function buildFileRows(files){if(!files||!files.length)return'';return files.map(f=>fileEntryHTML(f)).join('');}
 function fileEntryHTML(f){
   const typeOpts=FILE_TYPES.map(t=>`<option ${f.type===t?'selected':''}>${t}</option>`).join('');
   const color=fileTypeColor(f.type);
@@ -815,42 +795,19 @@ function fileEntryHTML(f){
     <button class="file-del-btn" onclick="this.closest('.file-entry').remove()" title="Remove">✕</button>
   </div>`;
 }
-
 async function handleFileUpload(fileList){
-  const zone=document.getElementById('upload-zone');
   const prog=document.getElementById('upload-progress');
   const list=document.getElementById('file-list');
-  const files=Array.from(fileList);
-  if(!files.length)return;
-
-  // drag-over styling
-  zone.classList.remove('over');
-
-  for(const file of files){
-    const label=file.name;
-    const type=guessFileType(file.name);
-
-    // Show progress
-    const pid='p'+Date.now()+Math.random();
-    const pEl=document.createElement('div');
-    pEl.id=pid;pEl.className='upload-progress';
-    pEl.textContent=`⏫ Uploading ${label}...`;
-    prog.appendChild(pEl);
-
+  for(const file of Array.from(fileList)){
+    const label=file.name,type=guessFileType(file.name);
+    const pEl=document.createElement('div');pEl.className='upload-progress';pEl.textContent=`⏫ Uploading ${label}...`;prog.appendChild(pEl);
     try{
       const url=await uploadToUploadcare(file);
       pEl.remove();
-      const div=document.createElement('div');
-      div.innerHTML=fileEntryHTML({url,label,type});
-      list.appendChild(div.firstElementChild);
-    }catch(e){
-      pEl.style.color='#e74c3c';
-      pEl.textContent=`❌ Failed: ${label} — ${e.message}`;
-      setTimeout(()=>pEl.remove(),5000);
-    }
+      const div=document.createElement('div');div.innerHTML=fileEntryHTML({url,label,type});list.appendChild(div.firstElementChild);
+    }catch(e){pEl.style.color='#e74c3c';pEl.textContent=`❌ Failed: ${label} — ${e.message}`;setTimeout(()=>pEl.remove(),5000);}
   }
 }
-
 async function uploadToUploadcare(file){
   const fd=new FormData();
   fd.append('UPLOADCARE_PUB_KEY','4385c0e1769b894e7a77');
@@ -859,144 +816,100 @@ async function uploadToUploadcare(file){
   const r=await fetch('https://upload.uploadcare.com/base/',{method:'POST',body:fd});
   if(!r.ok)throw new Error('HTTP '+r.status);
   const j=await r.json();
-  const uuid=j.file;
-  if(!uuid)throw new Error('No file UUID returned');
-  return`https://ucarecdn.com/${uuid}/${encodeURIComponent(file.name)}`;
+  if(!j.file)throw new Error('No file UUID returned');
+  return`https://ucarecdn.com/${j.file}/${encodeURIComponent(file.name)}`;
 }
-
-// Wire up drag-and-drop on the upload zone (runs after modal renders)
 function initUploadZone(){
   const zone=document.getElementById('upload-zone');
   if(!zone)return;
   zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('over');});
   zone.addEventListener('dragleave',()=>zone.classList.remove('over'));
-  zone.addEventListener('drop',e=>{
-    e.preventDefault();zone.classList.remove('over');
-    handleFileUpload(e.dataTransfer.files);
-  });
+  zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('over');handleFileUpload(e.dataTransfer.files);});
 }
 
 // ── Import Quote ──────────────────────────────────────────────────────────────
 let importRows=[];
-
 function openImport(){
   document.getElementById('modal-root').innerHTML=`<div class="modal-bg" onclick="closeModal(event)"><div class="modal" style="width:560px;border:2px solid #117a65" onclick="event.stopPropagation()">
     <h3 style="color:#2ecc71">📥 Import Quote CSV</h3>
     <p style="font-size:12px;color:#aaa;margin-bottom:12px;line-height:1.6">Drop a quote CSV exported from your quoting software. Each line item becomes a separate scheduler order.</p>
     <div class="import-drop" id="import-drop" onclick="document.getElementById('import-file').click()">
-      <div style="font-size:28px;margin-bottom:6px">📂</div>
-      <div>Drop CSV here or click to browse</div>
+      <div style="font-size:28px;margin-bottom:6px">📂</div><div>Drop CSV here or click to browse</div>
       <input type="file" id="import-file" accept=".csv" style="display:none" onchange="handleImportFile(this.files[0])">
     </div>
     <div id="import-preview"></div>
-    <div class="modal-actions">
-      <button onclick="closeModal()">Cancel</button>
-      <button class="mbtn-import" id="import-go-btn" style="display:none" onclick="doImport()">Add to Scheduler</button>
-    </div>
+    <div class="modal-actions"><button onclick="closeModal()">Cancel</button><button class="mbtn-import" id="import-go-btn" style="display:none" onclick="doImport()">Add to Scheduler</button></div>
   </div></div>`;
   const dz=document.getElementById('import-drop');
   dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over');});
   dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
   dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('over');const f=e.dataTransfer.files[0];if(f)handleImportFile(f);});
 }
-
 function handleImportFile(file){
-  if(!file)return;
   const reader=new FileReader();
-  reader.onload=e=>{
-    try{importRows=parseQuoteCSV(e.target.result);renderImportPreview();}
-    catch(ex){document.getElementById('import-preview').innerHTML=`<div style="color:#e74c3c;font-size:12px;padding:10px">Could not parse CSV: ${ex.message}</div>`;}
-  };
+  reader.onload=e=>{try{importRows=parseQuoteCSV(e.target.result);renderImportPreview();}catch(ex){document.getElementById('import-preview').innerHTML=`<div style="color:#e74c3c;font-size:12px;padding:10px">Could not parse: ${ex.message}</div>`;}};
   reader.readAsText(file);
 }
-
 function parseQuoteCSV(text){
   text=text.replace(/^\uFEFF/,'');
   const lines=text.split(/\r?\n/).filter(l=>l.trim());
-  if(lines.length<2)throw new Error('CSV appears empty');
+  if(lines.length<2)throw new Error('CSV empty');
   const hdr=csvSplitLine(lines[0]);
   const col=n=>hdr.findIndex(h=>h.trim().toLowerCase()===n.toLowerCase());
-  const iName=col('Name'),iQty=col('Quantity'),iMat=col('Material'),
-        iThk=col('Thickness'),iDue=col('Required shipping date'),
-        iCust=col('Customer name'),iWO=col('Work order number'),
-        iQuote=col('Quote name'),iPrice=col('Line price'),iType=col('Type');
+  const iName=col('Name'),iQty=col('Quantity'),iMat=col('Material'),iThk=col('Thickness'),
+        iDue=col('Required shipping date'),iCust=col('Customer name'),iWO=col('Work order number'),
+        iPrice=col('Line price'),iType=col('Type');
   const rows=[];
   for(let i=1;i<lines.length;i++){
     const c=csvSplitLine(lines[i]);
-    if(!c[iName]||c[iName].trim()==='')continue;
-    const name=c[iName]?.trim()||'';
-    const qty=parseInt(c[iQty])||1;
-    const mat=c[iMat]?.trim()||'';
-    const thk=parseFloat(c[iThk])||0;
-    const matLabel=mat+(thk?` ${thk}"`:'');
-    const cust=iCust>=0?c[iCust]?.trim()||'':'';
-    const wo=iWO>=0?c[iWO]?.trim()||'':'';
-    const price=iPrice>=0?parseFloat(c[iPrice])||0:0;
-    const type=iType>=0?c[iType]?.trim():'Part';
-    let due='';
-    if(iDue>=0&&c[iDue]){const dp=new Date(c[iDue]);if(!isNaN(dp))due=dp.toISOString().slice(0,10);}
-    const sugMach=guessMachine(mat,thk,type,name);
+    if(!c[iName]||!c[iName].trim())continue;
+    const name=c[iName].trim(),qty=parseInt(c[iQty])||1,mat=(c[iMat]||'').trim();
+    const thk=parseFloat(c[iThk])||0,cust=iCust>=0?(c[iCust]||'').trim():'';
+    const wo=iWO>=0?(c[iWO]||'').trim():'',price=iPrice>=0?parseFloat(c[iPrice])||0:0;
+    const type=iType>=0?(c[iType]||'').trim():'Part';
+    let due='';if(iDue>=0&&c[iDue]){const dp=new Date(c[iDue]);if(!isNaN(dp))due=dp.toISOString().slice(0,10);}
+    const matLabel=mat+(thk?' '+thk+'"':'');
+    const sugMach=(type==='Item'||(!mat&&!thk))?'Miscellaneous':(name.toLowerCase().includes('tube')||name.toLowerCase().includes('pipe'))?'Tube Laser':'Flat Laser';
     rows.push({name,qty,matLabel,cust,wo,price,due,sugMach,skip:false});
   }
   if(!rows.length)throw new Error('No valid line items found');
   return rows;
 }
-
-function guessMachine(mat,thk,type,name){
-  const nl=name.toLowerCase();
-  if(type==='Item'||(!mat&&!thk))return'Miscellaneous';
-  if(nl.includes('tube')||nl.includes('pipe'))return'Tube Laser';
-  return'Flat Laser';
-}
-
 function csvSplitLine(line){
   const out=[];let cur='',inQ=false;
-  for(let i=0;i<line.length;i++){
-    const ch=line[i];
-    if(ch==='"'){if(inQ&&line[i+1]==='"'){cur+='"';i++;}else inQ=!inQ;}
-    else if(ch===','&&!inQ){out.push(cur);cur='';}
-    else cur+=ch;
-  }
+  for(let i=0;i<line.length;i++){const ch=line[i];if(ch==='"'){if(inQ&&line[i+1]==='"'){cur+='"';i++;}else inQ=!inQ;}else if(ch===','&&!inQ){out.push(cur);cur='';}else cur+=ch;}
   out.push(cur);return out;
 }
-
 function renderImportPreview(){
   const preview=document.getElementById('import-preview');
-  if(!importRows.length){preview.innerHTML='<div style="color:#aaa;font-size:12px">No rows to import.</div>';return;}
-  const hdr=`<div class="import-row import-row-hdr" style="background:none;padding:4px 10px"><div>Part / Job</div><div>Machine</div><div style="text-align:center">Qty</div></div>`;
+  if(!importRows.length){preview.innerHTML='<div style="color:#aaa;font-size:12px">No rows.</div>';return;}
+  const hdr=`<div class="import-row import-row-hdr" style="background:none;padding:4px 10px"><div>Part / Job</div><div>Machine</div><div>Qty</div></div>`;
   const rowsHtml=importRows.map((r,i)=>{
     const selOpts=MACHINES.map(m=>`<option value="${m}" ${r.sugMach===m?'selected':''}>${m}</option>`).join('');
-    return`<div class="import-row">
-      <div>
-        <div style="font-weight:700;color:#ecf0f1;margin-bottom:2px">${r.name}</div>
-        <div style="color:#7f8c8d;font-size:10px">${r.cust}${r.wo?' · '+r.wo:''}${r.matLabel?' · '+r.matLabel:''}${r.due?' · Due '+r.due:''}${r.price?' · $'+r.price.toFixed(2):''}</div>
-        <label style="display:flex;align-items:center;gap:5px;margin-top:3px;cursor:pointer"><input type="checkbox" class="import-chk" ${r.skip?'':'checked'} onchange="importRows[${i}].skip=!this.checked;renderImportPreview()"><span style="font-size:10px;color:#aaa">Include</span></label>
-      </div>
-      <div><select class="import-msel" id="imp-mach-${i}">${selOpts}</select></div>
-      <div><input type="number" class="import-qty" id="imp-qty-${i}" value="${r.qty}" min="1"></div>
-    </div>`;
+    return`<div class="import-row"><div>
+      <div style="font-weight:700;color:#ecf0f1">${r.name}</div>
+      <div style="color:#7f8c8d;font-size:10px">${r.cust}${r.wo?' · '+r.wo:''}${r.matLabel?' · '+r.matLabel:''}${r.due?' · Due '+r.due:''}${r.price?' · $'+r.price.toFixed(2):''}</div>
+      <label style="display:flex;align-items:center;gap:5px;margin-top:3px;cursor:pointer"><input type="checkbox" class="import-chk" ${r.skip?'':'checked'} onchange="importRows[${i}].skip=!this.checked;renderImportPreview()"><span style="font-size:10px;color:#aaa">Include</span></label>
+    </div><div><select class="import-msel" id="imp-mach-${i}">${selOpts}</select></div>
+    <div><input type="number" class="import-qty" id="imp-qty-${i}" value="${r.qty}" min="1"></div></div>`;
   }).join('');
   const included=importRows.filter(r=>!r.skip).length;
-  preview.innerHTML=`<div style="font-size:12px;color:#aaa;margin-bottom:8px">${importRows.length} line item${importRows.length!==1?'s':''} found · <strong style="color:#2ecc71">${included} selected</strong></div>${hdr}${rowsHtml}`;
-  document.getElementById('import-go-btn').style.display=included?'':'none';
-  document.getElementById('import-go-btn').textContent=`Add ${included} Order${included!==1?'s':''} to Scheduler`;
+  preview.innerHTML=`<div style="font-size:12px;color:#aaa;margin-bottom:8px">${importRows.length} items · <strong style="color:#2ecc71">${included} selected</strong></div>${hdr}${rowsHtml}`;
+  const btn=document.getElementById('import-go-btn');
+  btn.style.display=included?'':'none';btn.textContent=`Add ${included} Order${included!==1?'s':''} to Scheduler`;
 }
-
 async function doImport(){
   const toAdd=[];
   importRows.forEach((r,i)=>{
     if(r.skip)return;
     const mach=document.getElementById(`imp-mach-${i}`)?.value||r.sugMach;
     const qty=parseInt(document.getElementById(`imp-qty-${i}`)?.value)||r.qty;
-    const machines={};
-    machines[mach]={h:0,wo:weekOffset,day:0};
+    const machines={};machines[mach]={h:0,wo:weekOffset,day:0};
     toAdd.push({id:nextId++,customer:r.cust||'Unknown',part:r.name+(r.wo?' ['+r.wo+']':''),qty,due:r.due||'',status:'Scheduled',weekOffset,day:0,rush:false,machines,files:[]});
   });
   if(!toAdd.length)return;
-  closeModal();setSyncBusy('Importing...');
-  orders.push(...toAdd);
-  await persist();render();
-  showOk(`Imported ${toAdd.length} order${toAdd.length!==1?'s':''} from quote`);
+  closeModal();setSyncBusy('Importing...');orders.push(...toAdd);
+  await persist();render();showOk(`Imported ${toAdd.length} order${toAdd.length!==1?'s':''}`);
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
