@@ -206,6 +206,18 @@ body{font-family:Arial,sans-serif;background:#f4f6f9;color:#222;font-size:14px}
 .ob-file-chip:hover{opacity:.75}
 .add-file-btn{font-size:11px;padding:5px 12px;border-radius:6px;border:1px dashed #34495e;background:none;color:#aaa;cursor:pointer;margin-top:4px;width:100%}
 .add-file-btn:hover{border-color:#2980b9;color:#2980b9}
+.hist-card{background:#fff;border:1px solid #dde3eb;border-radius:10px;margin-bottom:14px;overflow:hidden}
+.hist-card-hdr{background:#1a3a5c;color:#fff;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px}
+.hist-card-title{font-size:13px;font-weight:700}
+.hist-card-meta{font-size:11px;color:#a9cce3}
+.hist-run{border-top:1px solid #eaeff5;padding:10px 14px}
+.hist-run-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:4px}
+.hist-run-label{font-size:12px;font-weight:700;color:#1a3a5c}
+.hist-run-date{font-size:11px;color:#888}
+.hist-signoff{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid #f0f3f7;font-size:11px}
+.hist-signoff:last-child{border-bottom:none}
+.hist-op-chip{font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;color:#fff;white-space:nowrap}
+.hist-empty{text-align:center;padding:40px;color:#aaa;font-size:13px}
 .upload-zone{border:2px dashed #2ecc71;border-radius:8px;padding:14px;margin-bottom:8px;text-align:center;cursor:pointer;color:#aaa;font-size:12px;transition:background .15s;position:relative}
 .upload-zone:hover,.upload-zone.over{background:#0d2a1f;border-color:#27ae60;color:#2ecc71}
 .upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
@@ -279,6 +291,7 @@ body{font-family:Arial,sans-serif;background:#f4f6f9;color:#222;font-size:14px}
     <button class="tab" onclick="switchTab('month')">Month</button>
     <button class="tab" onclick="switchTab('jobs')">All Jobs</button>
     <button class="tab" onclick="switchTab('machines')">Machines</button>
+    <button class="tab" id="tab-history" onclick="switchTab('history')" style="display:none">🔍 Part History</button>
   </div>
   <div class="main">
     <div id="view-calendar">
@@ -328,6 +341,18 @@ body{font-family:Arial,sans-serif;background:#f4f6f9;color:#222;font-size:14px}
     <div id="view-machines" style="display:none">
       <div class="mach-totals" id="mach-totals"></div>
       <div class="mach-grid-tab" id="mach-cards"></div>
+    </div>
+    <div id="view-history" style="display:none">
+      <div class="filter-bar" style="margin-bottom:16px">
+        <input id="history-search" placeholder="Search part name, customer, or job…" oninput="renderHistory()" style="width:320px;font-size:13px">
+        <select id="history-machine" onchange="renderHistory()" style="font-size:12px;padding:6px 10px;border-radius:6px;border:1px solid #c5d5e8;background:#fff">
+          <option value="">All Machines</option>
+        </select>
+        <select id="history-operator" onchange="renderHistory()" style="font-size:12px;padding:6px 10px;border-radius:6px;border:1px solid #c5d5e8;background:#fff">
+          <option value="">All Operators</option>
+        </select>
+      </div>
+      <div id="history-results"></div>
     </div>
   </div>
 </div>
@@ -491,11 +516,14 @@ function wkLabel(wo){const m=getMon(wo),f=new Date(m);f.setDate(m.getDate()+6);r
 
 function switchTab(tab){
   currentTab=tab;
-  ['calendar','month','jobs','machines'].forEach((v,i)=>{
-    document.querySelectorAll('.tab')[i].classList.toggle('active',v===tab);
-    document.getElementById('view-'+v).style.display=v===tab?'':'none';
-  });
-  if(tab==='jobs')renderJobs();else if(tab==='machines')renderMachines();else if(tab==='month')renderMonth();else render();
+  const tabViews=['calendar','month','jobs','machines','history'];
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',tabViews[i]===tab));
+  tabViews.forEach(v=>{const el=document.getElementById('view-'+v);if(el)el.style.display=v===tab?'':'none';});
+  if(tab==='jobs')renderJobs();
+  else if(tab==='machines')renderMachines();
+  else if(tab==='month')renderMonth();
+  else if(tab==='history')renderHistory();
+  else render();
 }
 
 // ── Weekend modal ─────────────────────────────────────────────────────────────
@@ -748,8 +776,9 @@ function showModal(data,editId,isRush){
   }).join('');
   document.getElementById('modal-root').innerHTML=`<div class="modal-bg" onclick="closeModal(event)"><div class="modal ${isRush?'rush-modal':''}" onclick="event.stopPropagation()">
     <h3 class="${isRush?'rush-hdr':''}">${isRush?'🚨 Rush Job':editId!==null?'✏️ Edit Order':'➕ Add Order'}</h3>
-    <div class="form-row"><label>Customer</label><input id="f-cust" value="${data.customer||''}" placeholder="Customer name"></div>
-    <div class="form-row"><label>Part / Job Name</label><input id="f-part" value="${data.part||''}" placeholder="Part or job description"></div>
+    <div class="form-row"><label>Customer</label><input id="f-cust" value="${data.customer||''}" placeholder="Customer name" oninput="checkRepeatPart()"></div>
+    <div class="form-row"><label>Part / Job Name</label><input id="f-part" value="${data.part||''}" placeholder="Part or job description" oninput="checkRepeatPart()"></div>
+    <div id="repeat-banner" style="display:none;margin-bottom:8px;padding:8px 12px;background:#0d2a1f;border:1px solid #2ecc71;border-radius:7px;font-size:12px;color:#2ecc71"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       <div class="form-row"><label>Quantity</label><input id="f-qty" type="number" value="${data.qty||''}" placeholder="50"></div>
       <div class="form-row"><label>Due Date</label><input id="f-due" type="date" value="${data.due||''}"></div>
@@ -771,6 +800,7 @@ function showModal(data,editId,isRush){
     </div>
   </div></div>`;
   initUploadZone();
+  if(editId===null||editId===undefined)setTimeout(checkRepeatPart,100);
 }
 function closeModal(e){if(!e||e.target.classList.contains('modal-bg'))document.getElementById('modal-root').innerHTML='';}
 
@@ -860,6 +890,49 @@ function addFileRow(){
 }
 
 function initUploadZone(){} // no-op, kept for compatibility
+
+// ── Repeat Part Detection ─────────────────────────────────────────────────────
+let _repeatDebounce=null;
+function checkRepeatPart(){
+  clearTimeout(_repeatDebounce);
+  _repeatDebounce=setTimeout(()=>{
+    const part=(document.getElementById('f-part')?.value||'').trim().toLowerCase();
+    const cust=(document.getElementById('f-cust')?.value||'').trim().toLowerCase();
+    const banner=document.getElementById('repeat-banner');
+    const fileList=document.getElementById('file-list');
+    if(!banner||!fileList)return;
+    if(!part&&!cust){banner.style.display='none';return;}
+
+    // Find most recent matching order with files
+    const matches=orders.filter(o=>{
+      const pm=(o.part||'').toLowerCase(),cm=(o.customer||'').toLowerCase();
+      const partMatch=part&&pm&&pm.includes(part);
+      const custMatch=cust&&cm&&cm.includes(cust);
+      return (partMatch||custMatch)&&o.files&&o.files.length;
+    }).sort((a,b)=>b.id-a.id);
+
+    if(!matches.length){banner.style.display='none';return;}
+
+    const best=matches[0];
+    const existingUrls=new Set(
+      Array.from(fileList.querySelectorAll('.file-entry')).map(r=>r.querySelector('.file-url')?.value||'').filter(Boolean)
+    );
+    const newFiles=best.files.filter(f=>f.url&&!existingUrls.has(f.url));
+
+    if(!newFiles.length){banner.style.display='none';return;}
+
+    // Auto-inject files and show banner
+    newFiles.forEach(f=>{
+      const div=document.createElement('div');
+      div.innerHTML=fileRowHTML(f);
+      fileList.appendChild(div.firstElementChild);
+    });
+
+    const lastOp=[...new Set((best.signoffs||[]).map(s=>s.operator))].join(', ')||'—';
+    banner.style.display='block';
+    banner.innerHTML=`✅ <strong>Repeat part found</strong> — ${newFiles.length} file${newFiles.length!==1?'s':''} auto-loaded from last run of <strong>${best.customer} · ${best.part}</strong>. Last worked by: <strong>${lastOp}</strong>.`;
+  },400);
+}
 
 // ── Import Quote ──────────────────────────────────────────────────────────────
 let importRows=[];
@@ -1001,6 +1074,9 @@ function showOpBar(){
     `<span style="color:${currentUser.color};font-weight:700">${currentUser.name}</span> &nbsp;·&nbsp; ${currentUser.role==='manager'?'⭐ Manager':'Operator'}`;
   const sel=document.getElementById('op-machine-sel');
   sel.innerHTML='<option value="">All Machines</option>'+MACHINES.map(m=>`<option value="${m}" ${myMachine===m?'selected':''}>${m}</option>`).join('');
+  // Show history tab for managers only
+  const histTab=document.getElementById('tab-history');
+  if(histTab)histTab.style.display=isManager()?'':'none';
 }
 
 function setMyMachine(m){
@@ -1075,6 +1151,85 @@ async function doSignoff(orderId, machine){
   showOk(`${currentUser.name} signed off ${qty} pcs on ${machine}${location?' → '+location:''}`);
 }
 
+// ── Part History ──────────────────────────────────────────────────────────────
+function renderHistory(){
+  const search=(document.getElementById('history-search')?.value||'').toLowerCase().trim();
+  const fm=document.getElementById('history-machine')?.value||'';
+  const fo=document.getElementById('history-operator')?.value||'';
+
+  const mSel=document.getElementById('history-machine');
+  if(mSel&&mSel.options.length===1)MACHINES.forEach(m=>{const op=document.createElement('option');op.value=m;op.textContent=m;mSel.appendChild(op);});
+  const oSel=document.getElementById('history-operator');
+  if(oSel&&oSel.options.length===1)USERS.forEach(u=>{const op=document.createElement('option');op.value=u.name;op.textContent=u.name;oSel.appendChild(op);});
+
+  const results=document.getElementById('history-results');
+
+  let matched=orders.filter(o=>{
+    const signoffs=o.signoffs||[];
+    const matchSearch=!search||(o.part||'').toLowerCase().includes(search)||(o.customer||'').toLowerCase().includes(search)||signoffs.some(s=>s.operator.toLowerCase().includes(search));
+    const matchMachine=!fm||signoffs.some(s=>s.machine===fm)||Object.keys(o.machines).includes(fm);
+    const matchOp=!fo||signoffs.some(s=>s.operator===fo);
+    return matchSearch&&matchMachine&&matchOp;
+  });
+
+  matched.sort((a,b)=>{
+    const la=a.signoffs||[],lb=b.signoffs||[];
+    if(!la.length&&!lb.length)return(b.id||0)-(a.id||0);
+    if(!la.length)return 1;if(!lb.length)return -1;
+    return 0;
+  });
+
+  if(!matched.length){
+    results.innerHTML=`<div class="hist-empty">${search||fm||fo?'No matching parts or jobs found.':'Search for a part number, customer name, or operator above.'}</div>`;
+    return;
+  }
+
+  results.innerHTML=matched.map(o=>{
+    const signoffs=o.signoffs||[];
+    const allOps=[...new Set(signoffs.map(s=>s.operator))];
+    const sc=STATUS_COLORS[o.status]||'#888',bg=STATUS_BG[o.status]||'#eee',st=STATUS_TEXT[o.status]||'#333';
+    const startDate=o.due?`Due ${o.due}`:`Wk of ${fd(getMon(o.weekOffset||0))}`;
+
+    const machineGroups=MACHINES.filter(m=>Object.keys(o.machines).includes(m)&&machHours(o,m)>0&&(!fm||m===fm));
+    const runsHtml=machineGroups.map(m=>{
+      const mso=signoffs.filter(s=>s.machine===m&&(!fo||s.operator===fo));
+      const mcolor=MCOLORS[m];
+      return`<div class="hist-run">
+        <div class="hist-run-hdr">
+          <div class="hist-run-label" style="color:${mcolor}">${MICONS[m]} ${m} — ${machHours(o,m)}h</div>
+          <div class="hist-run-date">${mso.length?mso.length+' sign-off'+(mso.length!==1?'s':''):'No sign-offs yet'}</div>
+        </div>
+        ${mso.length?mso.map(s=>{
+          const u=USERS.find(x=>x.name===s.operator);
+          return`<div class="hist-signoff">
+            <span class="hist-op-chip" style="background:${u?u.color:'#888'}">${s.operator}</span>
+            <span style="font-weight:700;color:#1a3a5c">${s.qty} pcs</span>
+            ${s.location?`<span style="color:#7f8c8d">→ ${s.location}</span>`:''}
+            ${s.done?`<span style="color:#2ecc71;font-weight:700;font-size:10px">✅ Done</span>`:''}
+            <span style="color:#aaa;margin-left:auto;font-size:10px">${s.ts}</span>
+          </div>`;
+        }).join(''):`<div style="font-size:11px;color:#aaa;padding:4px 0">Waiting for sign-off</div>`}
+      </div>`;
+    }).join('')||`<div class="hist-run" style="color:#aaa;font-size:12px">No operations recorded.</div>`;
+
+    const fileLinks=(o.files&&o.files.length)?`<div style="padding:6px 14px 10px;display:flex;flex-wrap:wrap;gap:6px">${o.files.map(f=>`<a href="${f.url}" target="_blank" style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:5px;text-decoration:none;background:${fileTypeColor(f.type)}22;color:${fileTypeColor(f.type)};border:1px solid ${fileTypeColor(f.type)}44">${fileTypeIcon(f.type)} ${f.label||f.type}</a>`).join('')}</div>`:'';
+
+    return`<div class="hist-card">
+      <div class="hist-card-hdr">
+        <div>
+          <div class="hist-card-title">${o.customer} — ${o.part||'(no part name)'}</div>
+          <div class="hist-card-meta">Qty ${o.qty} · ${startDate}${allOps.length?' · Worked by: '+allOps.join(', '):' · Not started'}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:5px;background:${bg};color:${st}">${o.status}</span>
+          <button style="font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:#fff;cursor:pointer" onclick="openEdit(${o.id})">Edit</button>
+        </div>
+      </div>
+      ${fileLinks}
+      ${runsHtml}
+    </div>`;
+  }).join('');
+}
 
 loadWknd();
 loadUser();
