@@ -359,7 +359,7 @@ body{font-family:Arial,sans-serif;background:#f4f6f9;color:#222;font-size:14px}
     </div>
     <div id="view-history" style="display:none">
       <div class="filter-bar" style="margin-bottom:16px">
-        <input id="history-search" placeholder="Search part name, customer, or job…" oninput="renderHistory()" style="width:320px;font-size:13px">
+        <input id="history-search" placeholder="Search part name, customer, or job…" oninput="renderHistoryDebounced()" style="width:320px;font-size:13px">
         <select id="history-machine" onchange="renderHistory()" style="font-size:12px;padding:6px 10px;border-radius:6px;border:1px solid #c5d5e8;background:#fff">
           <option value="">All Machines</option>
         </select>
@@ -1291,8 +1291,15 @@ async function doSignoff(orderId, machine){
 }
 
 // ── Part History ──────────────────────────────────────────────────────────────
+let _histDebounce=null;
+function renderHistoryDebounced(){
+  clearTimeout(_histDebounce);
+  _histDebounce=setTimeout(renderHistory, 200);
+}
+
 function renderHistory(){
-  const search=(document.getElementById('history-search')?.value||'').toLowerCase().trim();
+  const searchEl=document.getElementById('history-search');
+  const search=(searchEl?.value||'').toLowerCase().trim();
   const fm=document.getElementById('history-machine')?.value||'';
   const fo=document.getElementById('history-operator')?.value||'';
 
@@ -1323,7 +1330,7 @@ function renderHistory(){
     return;
   }
 
-  results.innerHTML=matched.map(o=>{
+  const resultsHTML=matched.map(o=>{
     const signoffs=o.signoffs||[];
     const allOps=[...new Set(signoffs.map(s=>s.operator))];
     const sc=STATUS_COLORS[o.status]||'#888',bg=STATUS_BG[o.status]||'#eee',st=STATUS_TEXT[o.status]||'#333';
@@ -1368,6 +1375,7 @@ function renderHistory(){
       ${runsHtml}
     </div>`;
   }).join('');
+  results.innerHTML=resultsHTML;
 }
 
 loadWknd();
