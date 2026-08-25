@@ -557,7 +557,7 @@ function openWkndModal(){
     <h3 class="wknd-hdr">📅 Weekend Hours</h3>
     <p style="font-size:12px;color:#aaa;margin-bottom:14px;line-height:1.6">Enter hours available each weekend day. 0 = closed. Jobs will spill into open weekend days automatically.</p>
     <div style="max-height:300px;overflow-y:auto">${rows}</div>
-    <div class="modal-actions"><button onclick="closeModal()">Cancel</button><button class="mbtn-wknd" onclick="applyWknd()">Save</button></div>
+    <div class="modal-actions"><button onclick="closeModalDirect()">Cancel</button><button class="mbtn-wknd" onclick="applyWknd()">Save</button></div>
   </div></div>`;
 }
 function applyWknd(){
@@ -567,7 +567,7 @@ function applyWknd(){
       if(el){const v=parseInt(el.value)||0;const k=wo+'_'+di;if(v>0)weekendHours[k]=v;else delete weekendHours[k];}
     });
   });
-  saveWknd();closeModal();render();
+  saveWknd();closeModalDirect();render();
 }
 
 // ── Calendar ──────────────────────────────────────────────────────────────────
@@ -822,7 +822,7 @@ function showModal(data,editId,isRush){
     '</div>'+
     '<div class="modal-actions">'+
       delBtn+
-      '<button onclick="closeModal()">Cancel</button>'+
+      '<button onclick="closeModalDirect()">Cancel</button>'+
       '<button class="'+(isRush?'mbtn-rush':'mbtn-save')+'" onclick="doSave('+saveId+')">Save Order</button>'+
     '</div>';
 
@@ -838,6 +838,9 @@ function showModal(data,editId,isRush){
 // ── Sequence Builder ──────────────────────────────────────────────────────────
 function closeModal(e){
   if(e&&e.target&&!e.target.classList.contains('modal-bg'))return;
+  document.getElementById('modal-root').innerHTML='';
+}
+function closeModalDirect(){
   document.getElementById('modal-root').innerHTML='';
 }
 let _seqDragIdx=null;
@@ -957,7 +960,7 @@ async function doSave(editId){
     files,
     sequence:validSeq
   };
-  closeModal();setSyncBusy();
+  closeModalDirect();setSyncBusy();
   if(editId!==null&&editId!=='null'&&editId!==undefined){
     const i=orders.findIndex(x=>x.id===Number(editId));
     if(i>=0){
@@ -976,7 +979,7 @@ async function doSave(editId){
 
 async function doDelete(id){
   if(!confirm('Delete this order?'))return;
-  closeModal();setSyncBusy('Deleting...');
+  closeModalDirect();setSyncBusy('Deleting...');
   orders=orders.filter(x=>x.id!==Number(id));
   await persist();
   render();
@@ -1069,7 +1072,7 @@ function openImport(){
       <input type="file" id="import-file" accept=".csv" style="display:none" onchange="handleImportFile(this.files[0])">
     </div>
     <div id="import-preview"></div>
-    <div class="modal-actions"><button onclick="closeModal()">Cancel</button><button class="mbtn-import" id="import-go-btn" style="display:none" onclick="doImport()">Add to Scheduler</button></div>
+    <div class="modal-actions"><button onclick="closeModalDirect()">Cancel</button><button class="mbtn-import" id="import-go-btn" style="display:none" onclick="doImport()">Add to Scheduler</button></div>
   </div></div>`;
   const dz=document.getElementById('import-drop');
   dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over');});
@@ -1139,7 +1142,7 @@ async function doImport(){
     toAdd.push({id:nextId++,customer:r.cust||'Unknown',part:r.name+(r.wo?' ['+r.wo+']':''),qty,due:r.due||'',status:'Scheduled',weekOffset,day:0,rush:false,machines,files:[]});
   });
   if(!toAdd.length)return;
-  closeModal();setSyncBusy('Importing...');orders.push(...toAdd);
+  closeModalDirect();setSyncBusy('Importing...');orders.push(...toAdd);
   await persist();render();showOk(`Imported ${toAdd.length} order${toAdd.length!==1?'s':''}`);
 }
 
@@ -1248,7 +1251,7 @@ function openSignoff(orderId, machine){
     <div class="form-row"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;letter-spacing:0"><input type="checkbox" id="so-done" style="width:auto;margin:0"> <span style="font-size:12px;color:#ecf0f1">Mark this operation complete${nextStep?' and push to '+nextStep:''}</span></label></div>
     ${nextInfo}
     <div class="modal-actions">
-      <button onclick="closeModal()">Cancel</button>
+      <button onclick="closeModalDirect()">Cancel</button>
       <button class="mbtn-signoff" onclick="doSignoff(${orderId},'${machine}')">Sign Off</button>
     </div>
   </div></div>`;
@@ -1276,7 +1279,7 @@ async function doSignoff(orderId, machine){
     if(o.status==='Scheduled')o.status='In Progress';
   }
 
-  closeModal();setSyncBusy('Saving sign-off...');
+  closeModalDirect();setSyncBusy('Saving sign-off...');
   await persist();render();
 
   // Tell operator what's next
