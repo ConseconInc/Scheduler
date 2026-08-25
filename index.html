@@ -902,10 +902,21 @@ function isStepLocked(o,machine){
 
 
 async function doSave(editId){
-  // Build machines map from sequence
+  // Sync sequence from current DOM input values
   const seq=window._modalSeq||[];
+  document.querySelectorAll('#seq-list .seq-item').forEach((row,i)=>{
+    if(!seq[i])return;
+    const hIn=row.querySelector('input[type=number]');
+    const wSel=row.querySelectorAll('select')[0];
+    const dSel=row.querySelectorAll('select')[1];
+    if(hIn)seq[i].h=parseFloat(hIn.value)||0;
+    if(wSel)seq[i].wo=parseInt(wSel.value)||weekOffset;
+    if(dSel)seq[i].day=parseInt(dSel.value)||0;
+  });
+  const validSeq=seq.filter(s=>s.machine&&s.h>0);
+  // Build machines map from sequence
   const machines={};
-  seq.forEach(s=>{if(s.machine&&s.h>0)machines[s.machine]={h:s.h,wo:s.wo||weekOffset,day:s.day||0};});
+  validSeq.forEach(s=>{machines[s.machine]={h:s.h,wo:s.wo||weekOffset,day:s.day||0};});
   const machDays=Object.values(machines).map(md=>md.wo*7+md.day);
   const earliestAbs=machDays.length?Math.min(...machDays):weekOffset*7;
   const files=[];
@@ -916,22 +927,26 @@ async function doSave(editId){
     if(url)files.push({url,type,label});
   });
   const order={
-    customer:document.getElementById('f-cust').value.trim()||'Unnamed',
-    part:document.getElementById('f-part').value.trim()||'',
-    qty:parseInt(document.getElementById('f-qty').value)||0,
-    due:document.getElementById('f-due').value||'',
-    status:document.getElementById('f-status').value,
+    customer:(document.getElementById('f-cust')?.value||'').trim()||'Unnamed',
+    part:(document.getElementById('f-part')?.value||'').trim()||'',
+    qty:parseInt(document.getElementById('f-qty')?.value)||0,
+    due:document.getElementById('f-due')?.value||'',
+    status:document.getElementById('f-status')?.value||'Scheduled',
     weekOffset:Math.floor(earliestAbs/7),
     day:earliestAbs%7,
-    rush:document.getElementById('f-rush').checked,
+    rush:document.getElementById('f-rush')?.checked||false,
     machines,
     files,
-    sequence:seq
+    sequence:validSeq
   };
   closeModal();setSyncBusy();
-  if(editId!==null&&editId!=='null'){
+  if(editId!==null&&editId!=='null'&&editId!==undefined){
     const i=orders.findIndex(x=>x.id===Number(editId));
-    if(i>=0){order.id=Number(editId);orders[i]=order;}
+    if(i>=0){
+      order.id=Number(editId);
+      order.signoffs=orders[i].signoffs||[]; // preserve sign-off history
+      orders[i]=order;
+    } else {order.id=Number(editId);orders.push(order);}
   } else {
     order.id=nextId++;
     orders.push(order);
