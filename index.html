@@ -348,7 +348,7 @@ body{font-family:Arial,sans-serif;background:#f4f6f9;color:#222;font-size:14px}
       </div>
       <div style="overflow-x:auto">
         <table class="jtable">
-          <thead><tr><th>#</th><th>Rush</th><th>Customer</th><th>Part/Job</th><th>Qty</th><th>Due</th><th>Starts</th><th>Status</th><th>Machines &amp; Hours</th><th>Total Hrs</th></tr></thead>
+          <thead><tr><th>#</th><th>Rush</th><th>Customer</th><th>Part/Job</th><th>PO #</th><th>Qty</th><th>Due</th><th>Starts</th><th>Status</th><th>Machines &amp; Hours</th><th>Total Hrs</th></tr></thead>
           <tbody id="job-tbody"></tbody>
         </table>
       </div>
@@ -655,7 +655,7 @@ function render(){
           const soChip=lastSO?`<div style="font-size:9px;margin-top:2px;color:#2ecc71;font-weight:700">✅ ${lastSO.operator} · ${lastSO.qty}pc${lastSO.location?' → '+lastSO.location:''}</div>`:
             isLocked?`<div class="locked-badge">⏳ Waiting for Step ${(o.sequence||[]).findIndex(s=>s.machine===machine)}</div>`:'';
           const fileChips=(o.files&&o.files.length)?'<div class="ob-files">'+o.files.map(f=>'<a class="ob-file-chip" href="'+f.url+'" target="_blank" onclick="event.stopPropagation()" style="background:'+fileTypeColor(f.type)+'22;color:'+fileTypeColor(f.type)+';border:1px solid '+fileTypeColor(f.type)+'55" title="'+f.label+'">'+fileTypeIcon(f.type)+' '+(f.label||f.type)+'</a>').join('')+'</div>':'';
-          bl.innerHTML+=`<div class="ob-top"><div class="ob-name">${o.customer}</div><div class="ob-badge" style="background:${sc};color:#fff">${o.status}</div></div><div class="ob-row">${o.part}·Qty ${o.qty}</div><div class="ob-row" style="color:${color};font-weight:700">${ht}h on ${machine}</div><div class="ob-row">Due ${o.due||'—'}</div>${isSplit?`<div class="split-tag">▪ ${ht}h of ${tmh}h</div>`:''}${soChip}${fileChips}`;
+          bl.innerHTML+=`<div class="ob-top"><div class="ob-name">${o.customer}</div><div class="ob-badge" style="background:${sc};color:#fff">${o.status}</div></div><div class="ob-row">${o.part}${o.po?' · <span style="color:#f39c12;font-weight:700">'+o.po+'</span>':''}·Qty ${o.qty}</div><div class="ob-row" style="color:${color};font-weight:700">${ht}h on ${machine}</div><div class="ob-row">Due ${o.due||'—'}</div>${isSplit?`<div class="split-tag">▪ ${ht}h of ${tmh}h</div>`:''}${soChip}${fileChips}`;
           if(isLocked)bl.classList.add('oblock-locked');
           if(isMyMach&&!isLocked)bl.classList.add('op-highlight');
           bl.addEventListener('dragstart',()=>{if(!isManager())return;dragId=o.id;bl.classList.add('dragging');});
@@ -745,7 +745,7 @@ function renderJobs(){
     const sc=STATUS_COLORS[o.status]||'#888',bg=STATUS_BG[o.status]||'#eee',st=STATUS_TEXT[o.status]||'#333';
     const dn=DAYNAMES7[o.day||0];
     const pills=Object.entries(o.machines).map(([m])=>`<span class="mpill" style="background:${MCOLORS[m]}">${m.split(' ')[0]} ${machHours(o,m)}h</span>`).join('');
-    return`<tr onclick="openEdit(${o.id})"><td style="color:#aaa;font-size:11px">${i+1}</td><td style="text-align:center">${o.rush?'🚨':''}</td><td style="font-weight:700;color:#1a3a5c">${o.customer}</td><td>${o.part}</td><td>${o.qty}</td><td style="white-space:nowrap">${o.due||'—'}</td><td style="font-size:11px;white-space:nowrap">${dn}, Wk of ${fd(getMon(o.weekOffset||0))}</td><td><span class="badge" style="background:${bg};color:${st}">${o.status}</span></td><td>${pills}</td><td style="font-weight:700">${totalHrs(o).toFixed(1)}h</td></tr>`;
+    return`<tr onclick="openEdit(${o.id})"><td style="color:#aaa;font-size:11px">${i+1}</td><td style="text-align:center">${o.rush?'🚨':''}</td><td style="font-weight:700;color:#1a3a5c">${o.customer}</td><td>${o.part}</td><td style="color:#f39c12;font-weight:700">${o.po||'—'}</td><td>${o.qty}</td><td style="white-space:nowrap">${o.due||'—'}</td><td style="font-size:11px;white-space:nowrap">${dn}, Wk of ${fd(getMon(o.weekOffset||0))}</td><td><span class="badge" style="background:${bg};color:${st}">${o.status}</span></td><td>${pills}</td><td style="font-weight:700">${totalHrs(o).toFixed(1)}h</td></tr>`;
   }).join('');
 }
 
@@ -800,9 +800,10 @@ function showModal(data,editId,isRush){
     '<div class="form-row"><label>Part / Job Name</label><input id="f-part" value="'+(data.part||'')+'" placeholder="Part or job description" oninput="checkRepeatPart()"></div>'+
     '<div id="repeat-banner" style="display:none;margin-bottom:8px;padding:8px 12px;background:#0d2a1f;border:1px solid #2ecc71;border-radius:7px;font-size:12px;color:#2ecc71"></div>'+
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
+      '<div class="form-row"><label>PO #</label><input id="f-po" value="'+(data.po||'')+'" placeholder="e.g. PO-12345"></div>'+
       '<div class="form-row"><label>Quantity</label><input id="f-qty" type="number" value="'+(data.qty||'')+'" placeholder="50"></div>'+
-      '<div class="form-row"><label>Due Date</label><input id="f-due" type="date" value="'+(data.due||'')+'"></div>'+
     '</div>'+
+    '<div class="form-row"><label>Due Date</label><input id="f-due" type="date" value="'+(data.due||'')+'"></div>'+
     '<div class="form-row"><label>Status</label><select id="f-status" style="background:#141e2b;color:#ecf0f1;border:1px solid #34495e">'+statusOpts+'</select></div>'+
     '<div class="form-row"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;letter-spacing:0"><input type="checkbox" id="f-rush" '+(data.rush?'checked':'')+' style="width:auto;margin:0"> <span style="color:#e74c3c;font-weight:700;font-size:12px">🚨 Rush Job — jumps to front of queue</span></label></div>'+
     '<div class="form-row">'+
@@ -950,6 +951,7 @@ async function doSave(editId){
   const order={
     customer:(document.getElementById('f-cust')?.value||'').trim()||'Unnamed',
     part:(document.getElementById('f-part')?.value||'').trim()||'',
+    po:(document.getElementById('f-po')?.value||'').trim(),
     qty:parseInt(document.getElementById('f-qty')?.value)||0,
     due:document.getElementById('f-due')?.value||'',
     status:document.getElementById('f-status')?.value||'Scheduled',
@@ -1242,7 +1244,7 @@ function openSignoff(orderId, machine){
   document.getElementById('modal-root').innerHTML=`<div class="modal-bg" onclick="closeModal(event)"><div class="modal" style="border:2px solid #2ecc71;max-width:420px" onclick="event.stopPropagation()">
     <h3 style="color:#2ecc71">✅ Sign Off — ${machine}</h3>
     <div class="signoff-op">
-      <div style="font-size:13px;font-weight:700;color:#ecf0f1">${o.customer} · ${o.part}</div>
+      <div style="font-size:13px;font-weight:700;color:#ecf0f1">${o.customer} · ${o.part}${o.po?' · <span style="color:#f39c12">'+o.po+'</span>':''}</div>
       <div style="font-size:11px;color:#aaa;margin-top:2px">Total Qty: ${o.qty} · Pending: ${pending}</div>
     </div>
     ${histHTML}
@@ -1312,7 +1314,7 @@ function renderHistory(){
 
   let matched=orders.filter(o=>{
     const signoffs=o.signoffs||[];
-    const matchSearch=!search||(o.part||'').toLowerCase().includes(search)||(o.customer||'').toLowerCase().includes(search)||signoffs.some(s=>s.operator.toLowerCase().includes(search));
+    const matchSearch=!search||(o.part||'').toLowerCase().includes(search)||(o.customer||'').toLowerCase().includes(search)||(o.po||'').toLowerCase().includes(search)||signoffs.some(s=>s.operator.toLowerCase().includes(search));
     const matchMachine=!fm||signoffs.some(s=>s.machine===fm)||Object.keys(o.machines).includes(fm);
     const matchOp=!fo||signoffs.some(s=>s.operator===fo);
     return matchSearch&&matchMachine&&matchOp;
@@ -1363,7 +1365,7 @@ function renderHistory(){
     return`<div class="hist-card">
       <div class="hist-card-hdr">
         <div>
-          <div class="hist-card-title">${o.customer} — ${o.part||'(no part name)'}</div>
+          <div class="hist-card-title">${o.customer} — ${o.part||'(no part name)'}${o.po?' <span style="color:#f39c12;font-size:12px">'+o.po+'</span>':''}</div>
           <div class="hist-card-meta">Qty ${o.qty} · ${startDate}${allOps.length?' · Worked by: '+allOps.join(', '):' · Not started'}</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
