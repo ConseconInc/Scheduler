@@ -170,6 +170,21 @@ body{font-family:Arial,sans-serif;background:#f4f6f9;color:#222;font-size:14px}
 .next-op-sel{font-size:12px;padding:6px 10px;border-radius:6px;border:1px solid #34495e;background:#141e2b;color:#ecf0f1;width:100%}
 .mbtn-signoff{background:#2ecc71 !important;border-color:#2ecc71 !important;color:#1a3a5c !important;font-weight:700 !important}
 .op-highlight{outline:3px solid #f39c12 !important;outline-offset:2px}
+.oblock-locked{opacity:0.38;filter:grayscale(60%);cursor:default !important}
+.oblock-locked:hover{box-shadow:none !important}
+.locked-badge{font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:#bbb;color:#fff;display:inline-block;margin-top:3px}
+.waiting-badge{font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:#e67e22;color:#fff;display:inline-block;margin-top:3px}
+.seq-list{display:flex;flex-direction:column;gap:4px;margin-bottom:6px}
+.seq-item{display:flex;align-items:center;gap:8px;background:#0d1621;border-radius:7px;padding:7px 10px;cursor:grab;user-select:none;border:1px solid #2c3e50}
+.seq-item:hover{border-color:#2980b9}
+.seq-item.drag-over-seq{border-color:#2ecc71;background:#0d2a1f}
+.seq-num{width:20px;height:20px;border-radius:50%;background:#2980b9;color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.seq-mach{flex:1;font-size:12px;font-weight:700;color:#ecf0f1}
+.seq-hrs{font-size:11px;color:#7f8c8d}
+.seq-remove{background:none;border:none;color:#e74c3c;cursor:pointer;font-size:14px;padding:0 2px}
+.seq-add{font-size:11px;padding:5px 12px;border-radius:6px;border:1px dashed #34495e;background:none;color:#aaa;cursor:pointer;width:100%;margin-top:2px}
+.seq-add:hover{border-color:#2980b9;color:#2980b9}
+.step-arrow{text-align:center;color:#34495e;font-size:12px;margin:1px 0}
 .setup{max-width:560px;margin:30px auto;background:#fff;border-radius:12px;border:2px solid #c5d5e8;padding:30px 34px}
 .setup h2{font-size:20px;font-weight:700;color:#1a3a5c;margin-bottom:8px}
 .setup p{font-size:13px;color:#555;margin-bottom:20px;line-height:1.7}
@@ -633,17 +648,21 @@ function render(){
           bl.draggable=true;
           bl.style.background=bg;bl.style.borderLeftColor=sc;bl.style.borderTopColor=sc+'40';bl.style.borderRightColor=sc+'40';bl.style.borderBottomColor=sc+'40';
           if(o.rush)bl.innerHTML=`<div class="rush-label">RUSH</div>`;
+          const isLocked=isStepLocked(o,machine);
           const signoffs=(o.signoffs||[]).filter(s=>s.machine===machine);
           const lastSO=signoffs.length?signoffs[signoffs.length-1]:null;
           const isMyMach=myMachine&&myMachine===machine;
-          const soChip=lastSO?`<div style="font-size:9px;margin-top:2px;color:#2ecc71;font-weight:700">✅ ${lastSO.operator} · ${lastSO.qty}pc${lastSO.location?' → '+lastSO.location:''}</div>`:'';
+          const soChip=lastSO?`<div style="font-size:9px;margin-top:2px;color:#2ecc71;font-weight:700">✅ ${lastSO.operator} · ${lastSO.qty}pc${lastSO.location?' → '+lastSO.location:''}</div>`:
+            isLocked?`<div class="locked-badge">⏳ Waiting for Step ${(o.sequence||[]).findIndex(s=>s.machine===machine)}</div>`:'';
           const fileChips=(o.files&&o.files.length)?'<div class="ob-files">'+o.files.map(f=>'<a class="ob-file-chip" href="'+f.url+'" target="_blank" onclick="event.stopPropagation()" style="background:'+fileTypeColor(f.type)+'22;color:'+fileTypeColor(f.type)+';border:1px solid '+fileTypeColor(f.type)+'55" title="'+f.label+'">'+fileTypeIcon(f.type)+' '+(f.label||f.type)+'</a>').join('')+'</div>':'';
           bl.innerHTML+=`<div class="ob-top"><div class="ob-name">${o.customer}</div><div class="ob-badge" style="background:${sc};color:#fff">${o.status}</div></div><div class="ob-row">${o.part}·Qty ${o.qty}</div><div class="ob-row" style="color:${color};font-weight:700">${ht}h on ${machine}</div><div class="ob-row">Due ${o.due||'—'}</div>${isSplit?`<div class="split-tag">▪ ${ht}h of ${tmh}h</div>`:''}${soChip}${fileChips}`;
-          if(isMyMach)bl.classList.add('op-highlight');
+          if(isLocked)bl.classList.add('oblock-locked');
+          if(isMyMach&&!isLocked)bl.classList.add('op-highlight');
           bl.addEventListener('dragstart',()=>{if(!isManager())return;dragId=o.id;bl.classList.add('dragging');});
           bl.addEventListener('dragend',()=>{bl.classList.remove('dragging');dragId=null;});
           bl.onclick=e=>{
             if(e.defaultPrevented)return;
+            if(isLocked&&!isManager())return; // operators can't click locked steps
             if(isManager())openEdit(o.id);
             else openSignoff(o.id,machine);
           };
@@ -755,26 +774,13 @@ function openRush(){showModal({customer:'',part:'',qty:'',due:'',status:'Schedul
 function openEdit(id){const o=orders.find(x=>x.id===id);if(o)showModal({...o,machines:{...o.machines}},id,o.rush);}
 
 function showModal(data,editId,isRush){
-  // per-machine week/day now handled inside mFields
   const statusOpts=['Scheduled','In Progress','Done','On Hold'].map(s=>`<option ${data.status===s?'selected':''}>${s}</option>`).join('');
-  const mFields=MACHINES.map(m=>{
-    const mk=m.replace(/[\s\/]/g,'_');
-    const md=data.machines[m];
-    const mh=md?(typeof md==='object'?md.h:md):'';
-    const mwo=md&&typeof md==='object'&&md.wo!==undefined?md.wo:(data.weekOffset||0);
-    const mday=md&&typeof md==='object'&&md.day!==undefined?md.day:(data.day||0);
-    const wkOpts=Array.from({length:10},(_,i)=>{const wo=weekOffset+i;return`<option value="${wo}" ${mwo===wo?'selected':''}>Wk ${fd(getMon(wo))}</option>`;}).join('');
-    const dayOpts2=DAYNAMES7.map((d,i)=>`<option value="${i}" ${mday===i?'selected':''}>${d}${i>=5?' (wknd)':''}</option>`).join('');
-    return`<div style="background:#0d1621;border-radius:7px;padding:8px 10px;margin-bottom:6px">
-      <div style="font-size:11px;font-weight:700;color:#c39bd3;margin-bottom:6px">${m}</div>
-      <div style="display:grid;grid-template-columns:80px 1fr 1fr;gap:5px;align-items:center">
-        <div><label style="font-size:10px;color:#aaa;display:block;margin-bottom:2px">Hours</label><input type="number" step="0.5" min="0" id="mh-${mk}" value="${mh}" placeholder="hrs" style="width:100%;font-size:12px;padding:5px 7px;border-radius:6px;border:1px solid #34495e;background:#141e2b;color:#ecf0f1"></div>
-        <div><label style="font-size:10px;color:#aaa;display:block;margin-bottom:2px">Week</label><select id="mw-${mk}" style="width:100%;font-size:11px;padding:5px 4px;border-radius:6px;border:1px solid #34495e;background:#141e2b;color:#ecf0f1">${wkOpts}</select></div>
-        <div><label style="font-size:10px;color:#aaa;display:block;margin-bottom:2px">Start Day</label><select id="md-${mk}" style="width:100%;font-size:11px;padding:5px 4px;border-radius:6px;border:1px solid #34495e;background:#141e2b;color:#ecf0f1">${dayOpts2}</select></div>
-      </div>
-    </div>`;
-  }).join('');
-  document.getElementById('modal-root').innerHTML=`<div class="modal-bg" onclick="closeModal(event)"><div class="modal ${isRush?'rush-modal':''}" onclick="event.stopPropagation()">
+  // Build initial sequence from data.sequence or derive from machines order
+  const initSeq=data.sequence&&data.sequence.length?data.sequence
+    :Object.keys(data.machines||{}).filter(m=>machHours(data,m)>0).map(m=>({machine:m,h:machHours(data,m),wo:(data.machines[m]&&data.machines[m].wo!==undefined?data.machines[m].wo:data.weekOffset||0),day:(data.machines[m]&&data.machines[m].day!==undefined?data.machines[m].day:data.day||0)}));
+  window._modalSeq=[...initSeq];
+
+  document.getElementById('modal-root').innerHTML=`<div class="modal-bg" onclick="closeModal(event)"><div class="modal ${isRush?'rush-modal':''}" onclick="event.stopPropagation()" style="width:480px">
     <h3 class="${isRush?'rush-hdr':''}">${isRush?'🚨 Rush Job':editId!==null?'✏️ Edit Order':'➕ Add Order'}</h3>
     <div class="form-row"><label>Customer</label><input id="f-cust" value="${data.customer||''}" placeholder="Customer name" oninput="checkRepeatPart()"></div>
     <div class="form-row"><label>Part / Job Name</label><input id="f-part" value="${data.part||''}" placeholder="Part or job description" oninput="checkRepeatPart()"></div>
@@ -784,10 +790,17 @@ function showModal(data,editId,isRush){
       <div class="form-row"><label>Due Date</label><input id="f-due" type="date" value="${data.due||''}"></div>
     </div>
     <div class="form-row"><label>Status</label><select id="f-status" style="background:#141e2b;color:#ecf0f1;border:1px solid #34495e">${statusOpts}</select></div>
-    <div style="font-size:11px;color:#aaa;margin-bottom:6px;padding:5px 8px;background:#0d1621;border-radius:6px">Set hours and start day individually per machine below. Leave hours blank if a machine isn't used.</div>
     <div class="form-row"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;letter-spacing:0"><input type="checkbox" id="f-rush" ${data.rush?'checked':''} style="width:auto;margin:0"> <span style="color:#e74c3c;font-weight:700;font-size:12px">🚨 Rush Job — jumps to front of queue</span></label></div>
-    <div class="form-row"><label>Machine Hours &amp; Start Days</label>${mFields}</div>
-    <div class="modal-note">Hours over capacity carry to the next available day automatically.</div>
+    <div class="form-row">
+      <label>Operation Sequence <span style="font-weight:400;color:#7f8c8d;text-transform:none;letter-spacing:0">(drag to reorder)</span></label>
+      <div class="seq-list" id="seq-list"></div>
+      <select id="seq-add-sel" style="font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid #34495e;background:#141e2b;color:#ecf0f1;width:100%;margin-bottom:4px">
+        <option value="">— Add operation —</option>
+        ${MACHINES.map(m=>`<option value="${m}">${m}</option>`).join('')}
+      </select>
+      <button class="seq-add" onclick="seqAdd()">+ Add Operation</button>
+    </div>
+    <div class="modal-note">First operation starts immediately. Each subsequent step is locked until the previous operator signs off and pushes forward.</div>
     <div class="form-row" style="margin-top:10px">
       <label>📎 Files</label>
       <div id="file-list">${buildFileRows(data.files||[])}</div>
@@ -799,23 +812,95 @@ function showModal(data,editId,isRush){
       <button class="${isRush?'mbtn-rush':'mbtn-save'}" onclick="doSave(${editId===null||editId===undefined?'null':editId})">Save Order</button>
     </div>
   </div></div>`;
+  renderSeqList();
   initUploadZone();
   if(editId===null||editId===undefined)setTimeout(checkRepeatPart,100);
 }
-function closeModal(e){if(!e||e.target.classList.contains('modal-bg'))document.getElementById('modal-root').innerHTML='';}
+// ── Sequence Builder ──────────────────────────────────────────────────────────
+let _seqDragIdx=null;
+
+function renderSeqList(){
+  const list=document.getElementById('seq-list');
+  if(!list)return;
+  const seq=window._modalSeq||[];
+  list.innerHTML=seq.map((s,i)=>{
+    const color=MCOLORS[s.machine]||'#888';
+    return`${i>0?'<div class="step-arrow">↓</div>':''}
+    <div class="seq-item" draggable="true" data-i="${i}"
+      ondragstart="event.dataTransfer.setData('text/plain','${i}');_seqDragIdx=${i}"
+      ondragover="event.preventDefault();this.classList.add('drag-over-seq')"
+      ondragleave="this.classList.remove('drag-over-seq')"
+      ondrop="event.preventDefault();this.classList.remove('drag-over-seq');seqDrop(${i})">
+      <div class="seq-num" style="background:${color}">${i+1}</div>
+      <div class="seq-mach">${MICONS[s.machine]||'⚙️'} ${s.machine}</div>
+      <input type="number" step="0.5" min="0.5" value="${s.h||''}" placeholder="hrs"
+        style="width:58px;font-size:12px;padding:4px 6px;border-radius:5px;border:1px solid #34495e;background:#141e2b;color:#ecf0f1"
+        oninput="window._modalSeq[${i}].h=parseFloat(this.value)||0"
+        title="Hours for this operation">
+      <select style="font-size:11px;padding:4px 5px;border-radius:5px;border:1px solid #34495e;background:#141e2b;color:#ecf0f1;width:80px"
+        onchange="window._modalSeq[${i}].wo=parseInt(this.value)">
+        ${Array.from({length:10},(_,j)=>{const wo=weekOffset+j;return`<option value="${wo}" ${(s.wo||weekOffset)===wo?'selected':''}>Wk ${fd(getMon(wo))}</option>`;}).join('')}
+      </select>
+      <select style="font-size:11px;padding:4px 5px;border-radius:5px;border:1px solid #34495e;background:#141e2b;color:#ecf0f1;width:60px"
+        onchange="window._modalSeq[${i}].day=parseInt(this.value)">
+        ${DAYNAMES7.map((d,di)=>`<option value="${di}" ${(s.day||0)===di?'selected':''}>${d}</option>`).join('')}
+      </select>
+      <button class="seq-remove" onclick="seqRemove(${i})" title="Remove">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function seqAdd(){
+  const sel=document.getElementById('seq-add-sel');
+  const m=sel.value;if(!m)return;
+  window._modalSeq.push({machine:m,h:0,wo:weekOffset,day:0});
+  sel.value='';
+  renderSeqList();
+}
+
+function seqRemove(i){
+  window._modalSeq.splice(i,1);
+  renderSeqList();
+}
+
+function seqDrop(toIdx){
+  const fromIdx=_seqDragIdx;
+  if(fromIdx===null||fromIdx===toIdx)return;
+  const seq=window._modalSeq;
+  const item=seq.splice(fromIdx,1)[0];
+  seq.splice(toIdx,0,item);
+  renderSeqList();
+  _seqDragIdx=null;
+}
+
+// Returns index of current active step for an order (0-based), or -1 if all done
+function activeStepIndex(o){
+  const seq=o.sequence||[];
+  if(!seq.length)return 0;
+  for(let i=0;i<seq.length;i++){
+    const m=seq[i].machine;
+    const done=(o.signoffs||[]).some(s=>s.machine===m&&s.done);
+    if(!done)return i;
+  }
+  return seq.length; // all done
+}
+
+function isStepLocked(o,machine){
+  const seq=o.sequence||[];
+  if(!seq.length)return false;
+  const idx=seq.findIndex(s=>s.machine===machine);
+  if(idx<=0)return false; // first step is never locked
+  const activeIdx=activeStepIndex(o);
+  return idx>activeIdx;
+}
+
+
 
 async function doSave(editId){
+  // Build machines map from sequence
+  const seq=window._modalSeq||[];
   const machines={};
-  MACHINES.forEach(m=>{
-    const mk=m.replace(/[\s\/]/g,'_');
-    const v=parseFloat(document.getElementById('mh-'+mk).value);
-    if(!isNaN(v)&&v>0){
-      const wo=parseInt(document.getElementById('mw-'+mk).value)||0;
-      const day=parseInt(document.getElementById('md-'+mk).value)||0;
-      machines[m]={h:v,wo,day};
-    }
-  });
-  // Use earliest machine start as the order's reference day
+  seq.forEach(s=>{if(s.machine&&s.h>0)machines[s.machine]={h:s.h,wo:s.wo||weekOffset,day:s.day||0};});
   const machDays=Object.values(machines).map(md=>md.wo*7+md.day);
   const earliestAbs=machDays.length?Math.min(...machDays):weekOffset*7;
   const files=[];
@@ -835,7 +920,8 @@ async function doSave(editId){
     day:earliestAbs%7,
     rush:document.getElementById('f-rush').checked,
     machines,
-    files
+    files,
+    sequence:seq
   };
   closeModal();setSyncBusy();
   if(editId!==null&&editId!=='null'){
@@ -1092,8 +1178,12 @@ function openSignoff(orderId, machine){
 
   const history=(o.signoffs||[]).filter(s=>s.machine===machine);
   const lastLoc=history.length?history[history.length-1].location:'';
-  const pending=o.qty-(history.reduce((a,s)=>a+(s.qty||0),0));
-  const remainingMachines=Object.keys(o.machines).filter(m=>m!==machine&&machHours(o,m)>0);
+  const soQty=history.reduce((a,s)=>a+(s.qty||0),0);
+  const pending=Math.max(0,o.qty-soQty);
+
+  const seq=o.sequence||[];
+  const myIdx=seq.findIndex(s=>s.machine===machine);
+  const nextStep=myIdx>=0&&myIdx<seq.length-1?seq[myIdx+1].machine:null;
 
   const histHTML=history.length?`
     <div style="margin-bottom:10px">
@@ -1106,17 +1196,19 @@ function openSignoff(orderId, machine){
       </div>
     </div>`:'';
 
+  const nextInfo=nextStep?`<div style="font-size:11px;color:#f39c12;margin-top:6px;padding:6px 10px;background:#2a1f0a;border-radius:6px;border:1px solid #f39c22">⚡ Signing off will automatically unlock <strong>${nextStep}</strong></div>`:'';
+
   document.getElementById('modal-root').innerHTML=`<div class="modal-bg" onclick="closeModal(event)"><div class="modal" style="border:2px solid #2ecc71;max-width:420px" onclick="event.stopPropagation()">
     <h3 style="color:#2ecc71">✅ Sign Off — ${machine}</h3>
     <div class="signoff-op">
       <div style="font-size:13px;font-weight:700;color:#ecf0f1">${o.customer} · ${o.part}</div>
-      <div style="font-size:11px;color:#aaa;margin-top:2px">Total Qty: ${o.qty} · Pending: ${Math.max(0,pending)}</div>
+      <div style="font-size:11px;color:#aaa;margin-top:2px">Total Qty: ${o.qty} · Pending: ${pending}</div>
     </div>
     ${histHTML}
-    <div class="form-row"><label>Qty Completed This Pass</label><input class="qty-input" type="number" id="so-qty" min="1" max="${o.qty}" value="${Math.max(0,pending)}" placeholder="Enter qty"></div>
+    <div class="form-row"><label>Qty Completed This Pass</label><input class="qty-input" type="number" id="so-qty" min="1" max="${o.qty}" value="${pending||o.qty}" placeholder="Enter qty"></div>
     <div class="form-row"><label>Material Location</label><input class="loc-input" id="so-loc" value="${lastLoc}" placeholder="e.g. Rack 3, Welding Bench, Shipping Area"></div>
-    ${remainingMachines.length?`<div class="form-row"><label>Push to Next Operation</label><select class="next-op-sel" id="so-next"><option value="">— No push —</option>${remainingMachines.map(m=>`<option value="${m}">${m}</option>`).join('')}</select></div>`:''}
-    <div class="form-row" style="margin-top:4px"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;letter-spacing:0"><input type="checkbox" id="so-done" style="width:auto;margin:0"> <span style="font-size:12px;color:#ecf0f1">Mark this operation complete</span></label></div>
+    <div class="form-row"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;letter-spacing:0"><input type="checkbox" id="so-done" style="width:auto;margin:0"> <span style="font-size:12px;color:#ecf0f1">Mark this operation complete${nextStep?' and push to '+nextStep:''}</span></label></div>
+    ${nextInfo}
     <div class="modal-actions">
       <button onclick="closeModal()">Cancel</button>
       <button class="mbtn-signoff" onclick="doSignoff(${orderId},'${machine}')">Sign Off</button>
@@ -1128,27 +1220,33 @@ async function doSignoff(orderId, machine){
   const o=orders.find(x=>x.id===orderId);if(!o)return;
   const qty=parseInt(document.getElementById('so-qty')?.value)||0;
   const location=(document.getElementById('so-loc')?.value||'').trim();
-  const next=document.getElementById('so-next')?.value||'';
   const done=document.getElementById('so-done')?.checked||false;
 
   const ts=new Date().toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
   if(!o.signoffs)o.signoffs=[];
   o.signoffs.push({machine,operator:currentUser.name,qty,location,ts,done});
 
-  // If marking done, update order status if all machines done
+  // Auto-advance: mark order In Progress, check if all done
   if(done){
-    const allDone=Object.keys(o.machines).filter(m=>machHours(o,m)>0).every(m=>{
-      const soffs=(o.signoffs||[]).filter(s=>s.machine===m);
-      return soffs.some(s=>s.done);
-    });
-    if(allDone)o.status='Done';else if(o.status==='Scheduled')o.status='In Progress';
+    const seq=o.sequence||[];
+    const allDone=seq.length
+      ?seq.every(s=>!s.machine||(o.signoffs||[]).some(x=>x.machine===s.machine&&x.done))
+      :Object.keys(o.machines).filter(m=>machHours(o,m)>0).every(m=>(o.signoffs||[]).some(s=>s.machine===m&&s.done));
+    if(allDone)o.status='Done';
+    else if(o.status==='Scheduled')o.status='In Progress';
   } else {
     if(o.status==='Scheduled')o.status='In Progress';
   }
 
   closeModal();setSyncBusy('Saving sign-off...');
   await persist();render();
-  showOk(`${currentUser.name} signed off ${qty} pcs on ${machine}${location?' → '+location:''}`);
+
+  // Tell operator what's next
+  const seq=o.sequence||[];
+  const myIdx=seq.findIndex(s=>s.machine===machine);
+  const nextStep=done&&myIdx>=0&&myIdx<seq.length-1?seq[myIdx+1].machine:null;
+  if(nextStep)showOk(`${currentUser.name} signed off ${qty} pcs → ${nextStep} is now unlocked`);
+  else showOk(`${currentUser.name} signed off ${qty} pcs on ${machine}${location?' → '+location:''}`);
 }
 
 // ── Part History ──────────────────────────────────────────────────────────────
