@@ -118,7 +118,7 @@ body{font-family:Arial,sans-serif;background:#f4f6f9;color:#222;font-size:14px}
 .mach-jrow{font-size:11px;color:#555;padding:3px 0;display:flex;justify-content:space-between;border-bottom:1px solid #f0f3f7}
 .mach-jrow:last-child{border-bottom:none}
 .modal-bg{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.55);display:flex;align-items:flex-start;justify-content:center;z-index:1000;padding:20px 10px;overflow-y:auto}
-.modal{background:#1e2a38;border-radius:12px;border:1px solid #2c3e50;padding:22px 24px;width:440px;max-width:97%;color:#ecf0f1}
+.modal{background:#1e2a38;border-radius:12px;border:1px solid #2c3e50;padding:22px 24px;width:440px;max-width:97%;color:#ecf0f1;max-height:90vh;overflow-y:auto}
 .modal.rush-modal{border:2px solid #e74c3c}
 .modal.wknd-modal{border:2px solid #8e44ad}
 .modal h3{font-size:17px;font-weight:700;margin-bottom:16px;color:#fff}
@@ -775,10 +775,13 @@ function openEdit(id){const o=orders.find(x=>x.id===id);if(o)showModal({...o,mac
 
 function showModal(data,editId,isRush){
   const statusOpts=['Scheduled','In Progress','Done','On Hold'].map(s=>`<option ${data.status===s?'selected':''}>${s}</option>`).join('');
-  // Build initial sequence from data.sequence or derive from machines order
+  // Build sequence — use saved sequence if present, otherwise derive from machines map
+  function getMH(m){const md=(data.machines||{})[m];if(!md)return 0;return typeof md==='object'?md.h:md;}
+  function getMWO(m){const md=(data.machines||{})[m];return(md&&typeof md==='object'&&md.wo!==undefined)?md.wo:(data.weekOffset||0);}
+  function getMDay(m){const md=(data.machines||{})[m];return(md&&typeof md==='object'&&md.day!==undefined)?md.day:(data.day||0);}
   const initSeq=data.sequence&&data.sequence.length?data.sequence
-    :Object.keys(data.machines||{}).filter(m=>machHours(data,m)>0).map(m=>({machine:m,h:machHours(data,m),wo:(data.machines[m]&&data.machines[m].wo!==undefined?data.machines[m].wo:data.weekOffset||0),day:(data.machines[m]&&data.machines[m].day!==undefined?data.machines[m].day:data.day||0)}));
-  window._modalSeq=[...initSeq];
+    :Object.keys(data.machines||{}).filter(m=>getMH(m)>0).map(m=>({machine:m,h:getMH(m),wo:getMWO(m),day:getMDay(m)}));
+  window._modalSeq=initSeq.map(s=>({...s}));
 
   document.getElementById('modal-root').innerHTML=`<div class="modal-bg" onclick="closeModal(event)"><div class="modal ${isRush?'rush-modal':''}" onclick="event.stopPropagation()" style="width:480px">
     <h3 class="${isRush?'rush-hdr':''}">${isRush?'🚨 Rush Job':editId!==null?'✏️ Edit Order':'➕ Add Order'}</h3>
@@ -815,6 +818,8 @@ function showModal(data,editId,isRush){
   renderSeqList();
   initUploadZone();
   if(editId===null||editId===undefined)setTimeout(checkRepeatPart,100);
+  // Scroll modal to top
+  setTimeout(()=>{const m=document.querySelector('.modal');if(m)m.scrollTop=0;},50);
 }
 // ── Sequence Builder ──────────────────────────────────────────────────────────
 let _seqDragIdx=null;
