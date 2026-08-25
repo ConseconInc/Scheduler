@@ -140,7 +140,36 @@ body{font-family:Arial,sans-serif;background:#f4f6f9;color:#222;font-size:14px}
 .mbtn-wknd{background:#6c3483 !important;border-color:#6c3483 !important;color:#fff !important}
 .mbtn-del{color:#e74c3c !important;border-color:#e74c3c !important}
 .mbtn-del:hover{background:#4a2020 !important}
-/* Setup screen */
+/* Login screen */
+.login-screen{position:fixed;inset:0;background:#0d1621;display:flex;align-items:center;justify-content:center;z-index:2000;flex-direction:column}
+.login-logo{font-size:32px;margin-bottom:8px}
+.login-title{font-size:22px;font-weight:700;color:#fff;margin-bottom:4px}
+.login-sub{font-size:13px;color:#7f8c8d;margin-bottom:32px}
+.login-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;max-width:520px;width:100%;padding:0 20px}
+.login-btn{background:#1e2a38;border:2px solid #2c3e50;border-radius:12px;padding:18px 10px;cursor:pointer;text-align:center;color:#ecf0f1;transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:6px}
+.login-btn:hover{border-color:#2980b9;background:#1a3a5c;transform:translateY(-2px)}
+.login-btn.manager{border-color:#f39c12}
+.login-btn.manager:hover{background:#2a1f0a;border-color:#f39c12}
+.login-avatar{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#fff;margin-bottom:2px}
+.login-name{font-size:13px;font-weight:700}
+.login-role{font-size:10px;color:#7f8c8d;text-transform:uppercase;letter-spacing:.5px}
+/* Operator bar */
+.op-bar{background:#0d1621;border-bottom:2px solid #2c3e50;padding:6px 16px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.op-greeting{font-size:12px;color:#ecf0f1;font-weight:600}
+.op-machine-sel{font-size:12px;padding:4px 10px;border-radius:6px;border:1px solid #34495e;background:#1e2a38;color:#ecf0f1;cursor:pointer}
+.op-logout{font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid #34495e;background:none;color:#aaa;cursor:pointer}
+.op-logout:hover{color:#e74c3c;border-color:#e74c3c}
+/* Sign-off modal */
+.signoff-op{background:#0d1621;border-radius:8px;padding:10px 14px;margin-bottom:10px;border-left:4px solid #2ecc71}
+.signoff-history{max-height:180px;overflow-y:auto}
+.signoff-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #2c3e50;font-size:11px}
+.signoff-row:last-child{border-bottom:none}
+.signoff-badge{font-size:10px;padding:2px 7px;border-radius:4px;font-weight:700;background:#1e3a2a;color:#2ecc71}
+.loc-input{font-size:12px;padding:6px 10px;border-radius:6px;border:1px solid #34495e;background:#141e2b;color:#ecf0f1;width:100%}
+.qty-input{font-size:13px;padding:7px 10px;border-radius:6px;border:1px solid #34495e;background:#141e2b;color:#ecf0f1;width:100%}
+.next-op-sel{font-size:12px;padding:6px 10px;border-radius:6px;border:1px solid #34495e;background:#141e2b;color:#ecf0f1;width:100%}
+.mbtn-signoff{background:#2ecc71 !important;border-color:#2ecc71 !important;color:#1a3a5c !important;font-weight:700 !important}
+.op-highlight{outline:3px solid #f39c12 !important;outline-offset:2px}
 .setup{max-width:560px;margin:30px auto;background:#fff;border-radius:12px;border:2px solid #c5d5e8;padding:30px 34px}
 .setup h2{font-size:20px;font-weight:700;color:#1a3a5c;margin-bottom:8px}
 .setup p{font-size:13px;color:#555;margin-bottom:20px;line-height:1.7}
@@ -189,6 +218,26 @@ body{font-family:Arial,sans-serif;background:#f4f6f9;color:#222;font-size:14px}
 </style>
 </head>
 <body>
+
+<!-- Login screen -->
+<div id="login-screen" style="display:none" class="login-screen">
+  <div class="login-logo">⚙️</div>
+  <div class="login-title">Consecon Shop Scheduler</div>
+  <div class="login-sub">Who are you?</div>
+  <div class="login-grid" id="login-grid"></div>
+</div>
+
+<!-- Operator bar (shown when logged in) -->
+<div id="op-bar" style="display:none" class="op-bar">
+  <div class="op-greeting" id="op-greeting"></div>
+  <div style="display:flex;align-items:center;gap:8px">
+    <label style="font-size:11px;color:#aaa">My Machine:</label>
+    <select class="op-machine-sel" id="op-machine-sel" onchange="setMyMachine(this.value)">
+      <option value="">All Machines</option>
+    </select>
+    <button class="op-logout" onclick="doLogout()">Switch User</button>
+  </div>
+</div>
 
 <!-- Setup screen -->
 <div id="setup-screen" style="display:none" class="main">
@@ -285,10 +334,10 @@ body{font-family:Arial,sans-serif;background:#f4f6f9;color:#222;font-size:14px}
 <div id="modal-root"></div>
 
 <script>
-const MACHINES=['Tube Laser','Flat Laser','Welding','Tapping','Bending','Miscellaneous'];
-const MCOLORS={'Tube Laser':'#1a6fa8','Flat Laser':'#0f8a6e','Welding':'#b94f0a','Tapping':'#6d3db5','Bending':'#a07c0a','Miscellaneous':'#5a6577'};
-const MICONS={'Tube Laser':'🔵','Flat Laser':'🟢','Welding':'🟠','Tapping':'🟣','Bending':'🟡','Miscellaneous':'⚙️'};
-const MBGS={'Tube Laser':'#e8f4fc','Flat Laser':'#e4f5ef','Welding':'#fdf0e8','Tapping':'#f3edfb','Bending':'#faf5e4','Miscellaneous':'#f0f1f3'};
+const MACHINES=['Tube Laser','Flat Laser','Welding','Tapping','Bending','Hardware Insertion','Flow Drill','Miscellaneous'];
+const MCOLORS={'Tube Laser':'#1a6fa8','Flat Laser':'#0f8a6e','Welding':'#b94f0a','Tapping':'#6d3db5','Bending':'#a07c0a','Hardware Insertion':'#c0392b','Flow Drill':'#16a085','Miscellaneous':'#5a6577'};
+const MICONS={'Tube Laser':'🔵','Flat Laser':'🟢','Welding':'🟠','Tapping':'🟣','Bending':'🟡','Hardware Insertion':'🔩','Flow Drill':'🔄','Miscellaneous':'⚙️'};
+const MBGS={'Tube Laser':'#e8f4fc','Flat Laser':'#e4f5ef','Welding':'#fdf0e8','Tapping':'#f3edfb','Bending':'#faf5e4','Hardware Insertion':'#fdecea','Flow Drill':'#e8f8f5','Miscellaneous':'#f0f1f3'};
 const STATUS_COLORS={'Scheduled':'#2980b9','In Progress':'#27ae60','Done':'#8e44ad','On Hold':'#e67e22'};
 const STATUS_BG={'Scheduled':'#d6eaf8','In Progress':'#d5f5e3','Done':'#e8daef','On Hold':'#fdebd0'};
 const STATUS_TEXT={'Scheduled':'#1a5276','In Progress':'#145a32','Done':'#4a235a','On Hold':'#784212'};
@@ -556,11 +605,20 @@ function render(){
           bl.draggable=true;
           bl.style.background=bg;bl.style.borderLeftColor=sc;bl.style.borderTopColor=sc+'40';bl.style.borderRightColor=sc+'40';bl.style.borderBottomColor=sc+'40';
           if(o.rush)bl.innerHTML=`<div class="rush-label">RUSH</div>`;
-          const fileChips=(o.files&&o.files.length)?'<div class="ob-files">'+o.files.map(f=>'<a class="ob-file-chip" href="'+f.url+'" target="_blank" onclick="event.stopPropagation()" style="background:'+fileTypeColor(f.type)+'22;color:'+fileTypeColor(f.type)+';border:1px solid '+fileTypeColor(f.type)+'55" title="'+f.label+'">'+fileTypeIcon(f.type)+' '+( f.label||f.type)+'</a>').join('')+'</div>':'';
-          bl.innerHTML+=`<div class="ob-top"><div class="ob-name">${o.customer}</div><div class="ob-badge" style="background:${sc};color:#fff">${o.status}</div></div><div class="ob-row">${o.part}·Qty ${o.qty}</div><div class="ob-row" style="color:${color};font-weight:700">${ht}h on ${machine}</div><div class="ob-row">Due ${o.due||'—'}</div>${isSplit?`<div class="split-tag">▪ ${ht}h of ${tmh}h</div>`:''}${fileChips}`;
-          bl.addEventListener('dragstart',()=>{dragId=o.id;bl.classList.add('dragging');});
+          const signoffs=(o.signoffs||[]).filter(s=>s.machine===machine);
+          const lastSO=signoffs.length?signoffs[signoffs.length-1]:null;
+          const isMyMach=myMachine&&myMachine===machine;
+          const soChip=lastSO?`<div style="font-size:9px;margin-top:2px;color:#2ecc71;font-weight:700">✅ ${lastSO.operator} · ${lastSO.qty}pc${lastSO.location?' → '+lastSO.location:''}</div>`:'';
+          const fileChips=(o.files&&o.files.length)?'<div class="ob-files">'+o.files.map(f=>'<a class="ob-file-chip" href="'+f.url+'" target="_blank" onclick="event.stopPropagation()" style="background:'+fileTypeColor(f.type)+'22;color:'+fileTypeColor(f.type)+';border:1px solid '+fileTypeColor(f.type)+'55" title="'+f.label+'">'+fileTypeIcon(f.type)+' '+(f.label||f.type)+'</a>').join('')+'</div>':'';
+          bl.innerHTML+=`<div class="ob-top"><div class="ob-name">${o.customer}</div><div class="ob-badge" style="background:${sc};color:#fff">${o.status}</div></div><div class="ob-row">${o.part}·Qty ${o.qty}</div><div class="ob-row" style="color:${color};font-weight:700">${ht}h on ${machine}</div><div class="ob-row">Due ${o.due||'—'}</div>${isSplit?`<div class="split-tag">▪ ${ht}h of ${tmh}h</div>`:''}${soChip}${fileChips}`;
+          if(isMyMach)bl.classList.add('op-highlight');
+          bl.addEventListener('dragstart',()=>{if(!isManager())return;dragId=o.id;bl.classList.add('dragging');});
           bl.addEventListener('dragend',()=>{bl.classList.remove('dragging');dragId=null;});
-          bl.onclick=e=>{if(!e.defaultPrevented)openEdit(o.id);};
+          bl.onclick=e=>{
+            if(e.defaultPrevented)return;
+            if(isManager())openEdit(o.id);
+            else openSignoff(o.id,machine);
+          };
           cell.appendChild(bl);
         });
       }
@@ -888,12 +946,147 @@ async function doImport(){
   await persist();render();showOk(`Imported ${toAdd.length} order${toAdd.length!==1?'s':''}`);
 }
 
-// ── Boot ──────────────────────────────────────────────────────────────────────
+// ── Users & Login ─────────────────────────────────────────────────────────────
+const USERS=[
+  {name:'Chris', role:'manager', color:'#f39c12', initial:'C'},
+  {name:'Diego', role:'manager', color:'#e67e22', initial:'D'},
+  {name:'Jose',  role:'operator',color:'#2980b9', initial:'J'},
+  {name:'Ruben', role:'operator',color:'#27ae60', initial:'R'},
+  {name:'Oscar', role:'operator',color:'#8e44ad', initial:'O'},
+  {name:'Noe',   role:'operator',color:'#16a085', initial:'N'},
+  {name:'Jack',  role:'operator',color:'#c0392b', initial:'J'},
+];
+const USER_KEY='sched_user_v1';
+const MYMACH_KEY='sched_mymach_v1';
+let currentUser=null;
+let myMachine='';
+
+function loadUser(){
+  try{const u=JSON.parse(localStorage.getItem(USER_KEY)||'null');if(u)currentUser=u;}catch(e){}
+  try{myMachine=localStorage.getItem(MYMACH_KEY)||'';}catch(e){}
+}
+
+function renderLoginScreen(){
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('app').style.display='none';
+  document.getElementById('op-bar').style.display='none';
+  const grid=document.getElementById('login-grid');
+  grid.innerHTML=USERS.map(u=>`
+    <div class="login-btn ${u.role==='manager'?'manager':''}" onclick="doLogin('${u.name}')">
+      <div class="login-avatar" style="background:${u.color}">${u.initial}</div>
+      <div class="login-name">${u.name}</div>
+      <div class="login-role">${u.role==='manager'?'⭐ Manager':'Operator'}</div>
+    </div>`).join('');
+}
+
+function doLogin(name){
+  const u=USERS.find(x=>x.name===name);if(!u)return;
+  currentUser=u;
+  localStorage.setItem(USER_KEY,JSON.stringify(u));
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='';
+  showOpBar();
+  render();
+}
+
+function doLogout(){
+  currentUser=null;localStorage.removeItem(USER_KEY);
+  renderLoginScreen();
+}
+
+function showOpBar(){
+  if(!currentUser)return;
+  document.getElementById('op-bar').style.display='flex';
+  document.getElementById('op-greeting').innerHTML=
+    `<span style="color:${currentUser.color};font-weight:700">${currentUser.name}</span> &nbsp;·&nbsp; ${currentUser.role==='manager'?'⭐ Manager':'Operator'}`;
+  const sel=document.getElementById('op-machine-sel');
+  sel.innerHTML='<option value="">All Machines</option>'+MACHINES.map(m=>`<option value="${m}" ${myMachine===m?'selected':''}>${m}</option>`).join('');
+}
+
+function setMyMachine(m){
+  myMachine=m;localStorage.setItem(MYMACH_KEY,m);render();
+}
+
+function isManager(){return currentUser&&currentUser.role==='manager';}
+
+// ── Sign-off ──────────────────────────────────────────────────────────────────
+function openSignoff(orderId, machine){
+  const o=orders.find(x=>x.id===orderId);if(!o)return;
+  if(!currentUser){renderLoginScreen();return;}
+
+  const history=(o.signoffs||[]).filter(s=>s.machine===machine);
+  const lastLoc=history.length?history[history.length-1].location:'';
+  const pending=o.qty-(history.reduce((a,s)=>a+(s.qty||0),0));
+  const remainingMachines=Object.keys(o.machines).filter(m=>m!==machine&&machHours(o,m)>0);
+
+  const histHTML=history.length?`
+    <div style="margin-bottom:10px">
+      <div style="font-size:11px;color:#aaa;margin-bottom:6px;font-weight:700;text-transform:uppercase;letter-spacing:.4px">Sign-off History</div>
+      <div class="signoff-history">${history.map(s=>`
+        <div class="signoff-row">
+          <div><span class="signoff-badge">${s.operator}</span> <span style="color:#ecf0f1;margin-left:6px">${s.qty} pcs</span> ${s.location?`<span style="color:#7f8c8d">→ ${s.location}</span>`:''}</div>
+          <div style="color:#7f8c8d;font-size:10px">${s.ts}</div>
+        </div>`).join('')}
+      </div>
+    </div>`:'';
+
+  document.getElementById('modal-root').innerHTML=`<div class="modal-bg" onclick="closeModal(event)"><div class="modal" style="border:2px solid #2ecc71;max-width:420px" onclick="event.stopPropagation()">
+    <h3 style="color:#2ecc71">✅ Sign Off — ${machine}</h3>
+    <div class="signoff-op">
+      <div style="font-size:13px;font-weight:700;color:#ecf0f1">${o.customer} · ${o.part}</div>
+      <div style="font-size:11px;color:#aaa;margin-top:2px">Total Qty: ${o.qty} · Pending: ${Math.max(0,pending)}</div>
+    </div>
+    ${histHTML}
+    <div class="form-row"><label>Qty Completed This Pass</label><input class="qty-input" type="number" id="so-qty" min="1" max="${o.qty}" value="${Math.max(0,pending)}" placeholder="Enter qty"></div>
+    <div class="form-row"><label>Material Location</label><input class="loc-input" id="so-loc" value="${lastLoc}" placeholder="e.g. Rack 3, Welding Bench, Shipping Area"></div>
+    ${remainingMachines.length?`<div class="form-row"><label>Push to Next Operation</label><select class="next-op-sel" id="so-next"><option value="">— No push —</option>${remainingMachines.map(m=>`<option value="${m}">${m}</option>`).join('')}</select></div>`:''}
+    <div class="form-row" style="margin-top:4px"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;letter-spacing:0"><input type="checkbox" id="so-done" style="width:auto;margin:0"> <span style="font-size:12px;color:#ecf0f1">Mark this operation complete</span></label></div>
+    <div class="modal-actions">
+      <button onclick="closeModal()">Cancel</button>
+      <button class="mbtn-signoff" onclick="doSignoff(${orderId},'${machine}')">Sign Off</button>
+    </div>
+  </div></div>`;
+}
+
+async function doSignoff(orderId, machine){
+  const o=orders.find(x=>x.id===orderId);if(!o)return;
+  const qty=parseInt(document.getElementById('so-qty')?.value)||0;
+  const location=(document.getElementById('so-loc')?.value||'').trim();
+  const next=document.getElementById('so-next')?.value||'';
+  const done=document.getElementById('so-done')?.checked||false;
+
+  const ts=new Date().toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+  if(!o.signoffs)o.signoffs=[];
+  o.signoffs.push({machine,operator:currentUser.name,qty,location,ts,done});
+
+  // If marking done, update order status if all machines done
+  if(done){
+    const allDone=Object.keys(o.machines).filter(m=>machHours(o,m)>0).every(m=>{
+      const soffs=(o.signoffs||[]).filter(s=>s.machine===m);
+      return soffs.some(s=>s.done);
+    });
+    if(allDone)o.status='Done';else if(o.status==='Scheduled')o.status='In Progress';
+  } else {
+    if(o.status==='Scheduled')o.status='In Progress';
+  }
+
+  closeModal();setSyncBusy('Saving sign-off...');
+  await persist();render();
+  showOk(`${currentUser.name} signed off ${qty} pcs on ${machine}${location?' → '+location:''}`);
+}
+
+
 loadWknd();
-// Credentials hardcoded
+loadUser();
 BIN_ID='69ee553baaba8821973d9c8c';API_KEY='$2a$10$tP0A0hzHlVszmIz5vaWrK.NFp1d4y/7OXF8k3A3J71tp4ZOXGv4au';
-document.getElementById('app').style.display='';
-loadData();
+if(currentUser){
+  document.getElementById('app').style.display='';
+  showOpBar();
+  loadData();
+} else {
+  renderLoginScreen();
+  jbGet().then(d=>{orders=d.orders||[];nextId=d.nextId||1;}).catch(()=>{});
+}
 </script>
 </body>
 </html>
