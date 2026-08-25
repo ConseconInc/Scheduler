@@ -783,38 +783,52 @@ function showModal(data,editId,isRush){
     :Object.keys(data.machines||{}).filter(m=>getMH(m)>0).map(m=>({machine:m,h:getMH(m),wo:getMWO(m),day:getMDay(m)}));
   window._modalSeq=initSeq.map(s=>({...s}));
 
-  document.getElementById('modal-root').innerHTML=`<div class="modal-bg" onclick="closeModal(event)"><div class="modal ${isRush?'rush-modal':''}" onclick="event.stopPropagation()" style="width:480px">
-    <h3 class="${isRush?'rush-hdr':''}">${isRush?'🚨 Rush Job':editId!==null?'✏️ Edit Order':'➕ Add Order'}</h3>
-    <div class="form-row"><label>Customer</label><input id="f-cust" value="${data.customer||''}" placeholder="Customer name" oninput="checkRepeatPart()"></div>
-    <div class="form-row"><label>Part / Job Name</label><input id="f-part" value="${data.part||''}" placeholder="Part or job description" oninput="checkRepeatPart()"></div>
-    <div id="repeat-banner" style="display:none;margin-bottom:8px;padding:8px 12px;background:#0d2a1f;border:1px solid #2ecc71;border-radius:7px;font-size:12px;color:#2ecc71"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-      <div class="form-row"><label>Quantity</label><input id="f-qty" type="number" value="${data.qty||''}" placeholder="50"></div>
-      <div class="form-row"><label>Due Date</label><input id="f-due" type="date" value="${data.due||''}"></div>
-    </div>
-    <div class="form-row"><label>Status</label><select id="f-status" style="background:#141e2b;color:#ecf0f1;border:1px solid #34495e">${statusOpts}</select></div>
-    <div class="form-row"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;letter-spacing:0"><input type="checkbox" id="f-rush" ${data.rush?'checked':''} style="width:auto;margin:0"> <span style="color:#e74c3c;font-weight:700;font-size:12px">🚨 Rush Job — jumps to front of queue</span></label></div>
-    <div class="form-row">
-      <label>Operation Sequence <span style="font-weight:400;color:#7f8c8d;text-transform:none;letter-spacing:0">(drag to reorder)</span></label>
-      <div class="seq-list" id="seq-list"></div>
-      <select id="seq-add-sel" style="font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid #34495e;background:#141e2b;color:#ecf0f1;width:100%;margin-bottom:4px">
-        <option value="">— Add operation —</option>
-        ${MACHINES.map(m=>`<option value="${m}">${m}</option>`).join('')}
-      </select>
-      <button class="seq-add" onclick="seqAdd()">+ Add Operation</button>
-    </div>
-    <div class="modal-note">First operation starts immediately. Each subsequent step is locked until the previous operator signs off and pushes forward.</div>
-    <div class="form-row" style="margin-top:10px">
-      <label>📎 Files</label>
-      <div id="file-list">${buildFileRows(data.files||[])}</div>
-      <button type="button" class="add-file-btn" onclick="addFileRow()">+ Add File</button>
-    </div>
-    <div class="modal-actions">
-      ${editId!==null&&editId!==undefined?`<button class="mbtn-del" onclick="doDelete(${editId})">Delete</button>`:''}
-      <button onclick="closeModal()">Cancel</button>
-      <button class="${isRush?'mbtn-rush':'mbtn-save'}" onclick="doSave(${editId===null||editId===undefined?'null':editId})">Save Order</button>
-    </div>
-  </div></div>`;
+  const modalRoot=document.getElementById('modal-root');
+  const bg=document.createElement('div');bg.className='modal-bg';
+  bg.addEventListener('click',e=>{if(e.target===bg)closeModal();});
+  const modal=document.createElement('div');
+  modal.className='modal'+(isRush?' rush-modal':'');
+  modal.style.width='480px';
+  modal.addEventListener('click',e=>e.stopPropagation());
+
+  const saveId=(editId===null||editId===undefined)?'null':editId;
+  const delBtn=(editId!==null&&editId!==undefined)?'<button class="mbtn-del" onclick="doDelete('+editId+')">Delete</button>':'';
+
+  modal.innerHTML=
+    '<h3 class="'+(isRush?'rush-hdr':'')+'">'+( isRush?'🚨 Rush Job':editId!==null?'✏️ Edit Order':'➕ Add Order')+'</h3>'+
+    '<div class="form-row"><label>Customer</label><input id="f-cust" value="'+(data.customer||'')+'" placeholder="Customer name" oninput="checkRepeatPart()"></div>'+
+    '<div class="form-row"><label>Part / Job Name</label><input id="f-part" value="'+(data.part||'')+'" placeholder="Part or job description" oninput="checkRepeatPart()"></div>'+
+    '<div id="repeat-banner" style="display:none;margin-bottom:8px;padding:8px 12px;background:#0d2a1f;border:1px solid #2ecc71;border-radius:7px;font-size:12px;color:#2ecc71"></div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
+      '<div class="form-row"><label>Quantity</label><input id="f-qty" type="number" value="'+(data.qty||'')+'" placeholder="50"></div>'+
+      '<div class="form-row"><label>Due Date</label><input id="f-due" type="date" value="'+(data.due||'')+'"></div>'+
+    '</div>'+
+    '<div class="form-row"><label>Status</label><select id="f-status" style="background:#141e2b;color:#ecf0f1;border:1px solid #34495e">'+statusOpts+'</select></div>'+
+    '<div class="form-row"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;letter-spacing:0"><input type="checkbox" id="f-rush" '+(data.rush?'checked':'')+' style="width:auto;margin:0"> <span style="color:#e74c3c;font-weight:700;font-size:12px">🚨 Rush Job — jumps to front of queue</span></label></div>'+
+    '<div class="form-row">'+
+      '<label>Operation Sequence <span style="font-weight:400;color:#7f8c8d;text-transform:none;letter-spacing:0">(drag to reorder)</span></label>'+
+      '<div class="seq-list" id="seq-list"></div>'+
+      '<select id="seq-add-sel" style="font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid #34495e;background:#141e2b;color:#ecf0f1;width:100%;margin-bottom:4px">'+
+        '<option value="">— Add operation —</option>'+
+        MACHINES.map(m=>'<option value="'+m+'">'+m+'</option>').join('')+
+      '</select>'+
+      '<button class="seq-add" onclick="seqAdd()">+ Add Operation</button>'+
+    '</div>'+
+    '<div class="modal-note">First operation starts immediately. Each subsequent step is locked until the previous operator signs off.</div>'+
+    '<div class="form-row" style="margin-top:10px">'+
+      '<label>📎 Files</label>'+
+      '<div id="file-list">'+buildFileRows(data.files||[])+'</div>'+
+      '<button type="button" class="add-file-btn" onclick="addFileRow()">+ Add File</button>'+
+    '</div>'+
+    '<div class="modal-actions">'+
+      delBtn+
+      '<button onclick="closeModal()">Cancel</button>'+
+      '<button class="'+(isRush?'mbtn-rush':'mbtn-save')+'" onclick="doSave('+saveId+')">Save Order</button>'+
+    '</div>';
+
+  bg.appendChild(modal);
+  modalRoot.innerHTML='';
+  modalRoot.appendChild(bg);
   renderSeqList();
   initUploadZone();
   if(editId===null||editId===undefined)setTimeout(checkRepeatPart,100);
@@ -822,6 +836,10 @@ function showModal(data,editId,isRush){
   setTimeout(()=>{const m=document.querySelector('.modal');if(m)m.scrollTop=0;},50);
 }
 // ── Sequence Builder ──────────────────────────────────────────────────────────
+function closeModal(e){
+  if(e&&e.target&&!e.target.classList.contains('modal-bg'))return;
+  document.getElementById('modal-root').innerHTML='';
+}
 let _seqDragIdx=null;
 
 function renderSeqList(){
