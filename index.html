@@ -606,7 +606,7 @@ function render(){
   const body=document.getElementById('cal-body');body.innerHTML='';
   MACHINES.forEach(machine=>{
     const color=MCOLORS[machine];
-    const mht=orders.reduce((s,o)=>s+(o.machines[machine]||0),0);
+    const mht=orders.reduce((s,o)=>s+machHours(o,machine),0);
     const sec=document.createElement('div');sec.className='machine-section';sec.style.borderTopColor=color+'66';
     const row=document.createElement('div');row.className='machine-row';
     const lbl=document.createElement('div');lbl.className='mlabel';lbl.style.background=`linear-gradient(to right,${color}20,#f9fbfd)`;
