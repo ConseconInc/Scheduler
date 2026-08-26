@@ -1420,6 +1420,9 @@ function handlePOFile(file){
     try{
       const text=await extractPDFText(e.target.result);
       _parsedPO=parsePOText(text,file.name);
+      // Show raw text for debugging
+      const dbg=document.getElementById('po-preview');
+      dbg.innerHTML='<pre style="font-size:9px;color:#aaa;background:#0d1621;padding:8px;border-radius:6px;overflow:auto;max-height:180px;white-space:pre-wrap;margin-bottom:10px">'+text.substring(0,1000).replace(/</g,'&lt;')+'</pre>';
       renderPOPreview(_parsedPO);
     }catch(ex){
       preview.innerHTML='<div style="color:#e74c3c;font-size:12px;padding:10px">Could not read PDF: '+ex.message+'</div>';
