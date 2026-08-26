@@ -1451,37 +1451,55 @@ async function extractPDFText(arrayBuffer){
 function parsePOText(text,filename){
   const t=text.replace(/\s+/g,' ');
 
-  // PO Number
-  const poMatch=t.match(/P\.?O\.?\s*(?:No\.?|Number|#)[:\s#]*([A-Z0-9\-]+)/i)||t.match(/PO\s*[:#]?\s*([0-9]+)/i);
+  // PO Number — look for "P.O No.: 32680" or "PO No: 32680"
+  const poMatch=t.match(/P\.?O\.?\s*No\.?\s*[:\s#]*([0-9]+)/i)||
+                t.match(/Purchase\s+Order\s*[:#]?\s*([0-9]+)/i)||
+                t.match(/PO\s*[:#]\s*([0-9]+)/i);
   const po=poMatch?poMatch[1].trim():'';
 
-  // Customer name - usually appears near "To:" or at top
-  const custMatch=t.match(/(?:From|Bill\s+(?:From|To)|Company)[:\s]+([A-Z][A-Za-z\s,\.]+?)(?=\s+\d|\s+To:|\s+Ship)/)||
-    t.match(/^([A-Z][A-Za-z\s]+(?:Inc\.|LLC|Corp\.|Co\.))/m);
-  // Better: look for who sent it (their name at top before address)
+  // Customer — who sent the PO (appears before address, stop at newline or address start)
+  // In Troy's format it's the first company name before "PURCHASE ORDER"
   const lines=text.split('\n').map(l=>l.trim()).filter(Boolean);
   let customer='';
-  for(const l of lines){if(l.match(/^[A-Z][A-Za-z\s]+(?:Inc\.|LLC|Corp\.|Co\.|Works|Mfg)/))  {customer=l.trim();break;}}
+  for(const l of lines){
+    if(l.match(/^[A-Z][A-Za-z\s]+(?:Inc\.|LLC|Corp\.|Co\.|Works|Mfg|Industries|Manufacturing)/)){
+      customer=l.trim();
+      break;
+    }
+  }
+  // Remove any trailing address/PO junk
+  customer=customer.replace(/\s+PURCHASE ORDER.*/i,'').replace(/\s+\d{3,}.*/,'').trim();
 
-  // Part number - look for common patterns
-  const partMatch=t.match(/Part\s+(?:No|Number|#)[:\s]+([A-Z0-9\-#]+)/i)||
-    t.match(/(?:Part|Item)[:\s]+([A-Z]{2,}[\-][A-Z0-9\-#]+)/i)||
-    t.match(/\b([A-Z]{2,3}-[A-Z0-9]{2,}[A-Z0-9\-#]*)\b/);
+  // Part number — look for the actual part number pattern (e.g. PS-21F1-BNCHST-#tb)
+  // Usually appears in Part Number column: alphanumeric with dashes and possibly # suffix
+  const partMatch=t.match(/Part\s+Number\s+(?:Description\s+)?([A-Z]{2,}[A-Z0-9]*-[A-Z0-9\-#]+)/i)||
+                  t.match(/\b([A-Z]{2,3}-\d+[A-Z0-9]*-[A-Z0-9\-#]+)\b/)||
+                  t.match(/Open\s+([A-Z]{2,}[\-][A-Z0-9\-#]+)/i);
   const part=partMatch?partMatch[1].trim():'';
 
-  // Description
-  const descMatch=t.match(/Description[:\s]+(.{5,60}?)(?=\s+\d+\.?\d*\s+\$|\s+Qty|\s+Quantity)/i)||
-    t.match(/(?:Open\s+)?[A-Z]{2,3}-[A-Z0-9\-#]+\s+(.{5,80}?)(?=\s+\d+\.?\d*\s+\$)/i);
-  const description=descMatch?descMatch[1].trim():'';
+  // Description — text after part number, before quantity/price
+  // In Troy format: "Seat Tube ***11 TAPPED HOLES***"
+  let description='';
+  if(part){
+    const escaped=part.replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/#/g,'\\#');
+    const descMatch=t.match(new RegExp(escaped+'\\s+([^$\\d]{5,80}?)(?=\\s+\\d+\\.?\\d*\\s+\\$|\\s+\\d{2,}\\.00)','i'));
+    if(descMatch)description=descMatch[1].replace(/\*+/g,'').trim();
+  }
+  if(!description){
+    // fallback: look for text between part# and quantity
+    const descMatch=t.match(/Open\s+[A-Z0-9\-#]+\s+([A-Za-z][^$]{5,60}?)(?=\s+\d+\.?\d*\s+\$)/i);
+    if(descMatch)description=descMatch[1].replace(/\*+/g,'').trim();
+  }
 
-  // Quantity
-  const qtyMatch=t.match(/Quantity[:\s]+(\d+(?:\.\d+)?)/i)||t.match(/\b(\d+)\.00\s+\$/)||t.match(/Qty[:\s]+(\d+)/i);
+  // Quantity — look for number before price "$"
+  const qtyMatch=t.match(/(\d+)\.00\s+\$\d/)||
+                 t.match(/Quantity[:\s]+(\d+(?:\.\d+)?)/i)||
+                 t.match(/\b(\d{1,4})\.00\b/);
   const qty=qtyMatch?Math.round(parseFloat(qtyMatch[1])):0;
 
-  // Due date / Require date
+  // Due / Require date
   const dueMatch=t.match(/Require(?:d)?\s+Date[:\s]+(\d{1,2}\/\d{1,2}\/\d{4})/i)||
-    t.match(/Due\s+Date[:\s]+(\d{1,2}\/\d{1,2}\/\d{4})/i)||
-    t.match(/Date[:\s]+(\d{2}\/\d{2}\/\d{4})/i);
+                 t.match(/Due\s+Date[:\s]+(\d{1,2}\/\d{1,2}\/\d{4})/i);
   let due='';
   if(dueMatch){const d=new Date(dueMatch[1]);if(!isNaN(d))due=d.toISOString().slice(0,10);}
 
@@ -1490,16 +1508,15 @@ function parsePOText(text,filename){
   const wo=woMatch?woMatch[1].trim():'';
 
   // Rush flag
-  const rush=t.toLowerCase().includes('hot')||t.toLowerCase().includes('rush')||t.toLowerCase().includes('urgent');
+  const rush=/\*{2,}HOT\*{2,}|RUSH|URGENT/i.test(t);
 
-  // Now search history for matching part
+  // Search history for matching part
   const partLower=part.toLowerCase();
-  const descLower=description.toLowerCase();
   const history=orders.filter(o=>{
     if(!o.part)return false;
     const op=o.part.toLowerCase();
-    return(part&&op.includes(partLower))||(description&&op.includes(descLower.split(' ')[0]))||
-      (o.po&&o.po===po);
+    return(part&&(op.includes(partLower)||partLower.includes(op.split(' ')[0])))||
+          (o.po&&o.po===po);
   }).sort((a,b)=>b.id-a.id);
 
   const prevOrder=history.length?history[0]:null;
@@ -1550,7 +1567,7 @@ function renderPOPreview(p){
 function doPOImport(){
   if(!_parsedPO)return;
   const p=_parsedPO;
-  const partLabel=(p.part+(p.description?' — '+p.description:'')+(p.wo?' [WO:'+p.wo+']':'')).trim();
+  const partLabel=[p.part,p.description].filter(Boolean).join(' — ')+(p.wo?' [WO:'+p.wo+']':'');
   closeModalDirect();
   showModal({
     customer:p.customer||'',
