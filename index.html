@@ -1451,10 +1451,11 @@ async function extractPDFText(arrayBuffer){
 function parsePOText(text,filename){
   const t=text.replace(/\s+/g,' ');
 
-  // PO Number — look for "P.O No.: 32680" or "PO No: 32680"
-  const poMatch=t.match(/P\.?O\.?\s*No\.?\s*[:\s#]*([0-9]+)/i)||
-                t.match(/Purchase\s+Order\s*[:#]?\s*([0-9]+)/i)||
-                t.match(/PO\s*[:#]\s*([0-9]+)/i);
+  // PO Number — must be 4+ digits, look for explicit PO label first
+  const poMatch=t.match(/P\.O\.?\s*No\.?\s*[:\s]*([0-9]{4,})/i)||
+                t.match(/P\.O\s*(?:No|Number|#)[:\s]+([0-9]{4,})/i)||
+                t.match(/Purchase\s+Order\s*[:#]?\s*([0-9]{4,})/i)||
+                t.match(/PO\s*(?:No|Number|#)[:\s]+([0-9]{4,})/i);
   const po=poMatch?poMatch[1].trim():'';
 
   // Customer — who sent the PO (appears before address, stop at newline or address start)
