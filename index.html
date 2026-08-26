@@ -208,6 +208,7 @@ body{font-family:Arial,sans-serif;background:#f4f6f9;color:#222;font-size:14px}
 .wknd-dinput input{width:56px;font-size:12px;padding:5px 7px;border-radius:6px;border:1px solid #34495e;background:#141e2b;color:#ecf0f1}
 
 .import-btn{background:#117a65 !important;border-color:#117a65 !important;font-weight:700}
+.po-btn{background:#6c3483 !important;border-color:#6c3483 !important;font-weight:700}
 .import-drop{border:2px dashed #2ecc71;border-radius:10px;padding:30px 20px;text-align:center;cursor:pointer;color:#aaa;font-size:13px;transition:background .15s;margin-bottom:10px}
 .import-drop.over{background:#0d2a1f;border-color:#27ae60}
 .import-row{display:grid;grid-template-columns:1fr 1fr 80px;gap:6px;align-items:center;background:#0d1621;border-radius:6px;padding:7px 10px;margin-bottom:5px;font-size:11px}
@@ -297,6 +298,7 @@ body{font-family:Arial,sans-serif;background:#f4f6f9;color:#222;font-size:14px}
       <button onclick="loadData()">↻ Refresh</button>
       <button class="weekend-btn" onclick="openWkndModal()">📅 Weekend Hours</button>
       <button class="rush-btn" onclick="openRush()">🚨 Rush Job</button>
+      <button class="po-btn" onclick="openImportPO()">📋 Import PO</button>
       <button class="import-btn" onclick="openImport()">📥 Import Quote</button>
       <button class="add-btn" onclick="openAdd()">+ Add Order</button>
     </div>
@@ -1376,6 +1378,193 @@ function renderHistory(){
     </div>`;
   }).join('');
   results.innerHTML=resultsHTML;
+}
+
+// ── Import PO ─────────────────────────────────────────────────────────────────
+function openImportPO(){
+  const modalRoot=document.getElementById('modal-root');
+  const bg=document.createElement('div');bg.className='modal-bg';
+  bg.addEventListener('click',e=>{if(e.target===bg)closeModalDirect();});
+  const modal=document.createElement('div');
+  modal.className='modal';modal.style.cssText='width:500px;border:2px solid #8e44ad';
+  modal.addEventListener('click',e=>e.stopPropagation());
+  modal.innerHTML=
+    '<h3 style="color:#c39bd3">📋 Import Purchase Order</h3>'+
+    '<p style="font-size:12px;color:#aaa;margin-bottom:14px;line-height:1.7">Drop a customer PO PDF. The scheduler will read the part number, qty, due date, PO#, and check your history for matching parts to pre-fill the operation sequence and files.</p>'+
+    '<div class="upload-zone" id="po-drop-zone" style="border-color:#8e44ad">'+
+      '<input type="file" id="po-file-input" accept=".pdf" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%" onchange="handlePOFile(this.files[0])">'+
+      '<div style="font-size:28px;margin-bottom:6px">📋</div>'+
+      '<div>Drop PO PDF here or click to browse</div>'+
+    '</div>'+
+    '<div id="po-preview"></div>'+
+    '<div class="modal-actions">'+
+      '<button onclick="closeModalDirect()">Cancel</button>'+
+      '<button id="po-go-btn" style="display:none;background:#8e44ad;border-color:#8e44ad;color:#fff;font-weight:700;font-size:13px;padding:8px 18px;border-radius:7px;cursor:pointer" onclick="doPOImport()">Add to Scheduler</button>'+
+    '</div>';
+  bg.appendChild(modal);modalRoot.innerHTML='';modalRoot.appendChild(bg);
+
+  const dz=document.getElementById('po-drop-zone');
+  dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over');});
+  dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
+  dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('over');handlePOFile(e.dataTransfer.files[0]);});
+}
+
+let _parsedPO=null;
+
+function handlePOFile(file){
+  if(!file)return;
+  const preview=document.getElementById('po-preview');
+  preview.innerHTML='<div style="color:#aaa;font-size:12px;padding:10px">Reading PDF...</div>';
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    try{
+      const text=await extractPDFText(e.target.result);
+      _parsedPO=parsePOText(text,file.name);
+      renderPOPreview(_parsedPO);
+    }catch(ex){
+      preview.innerHTML='<div style="color:#e74c3c;font-size:12px;padding:10px">Could not read PDF: '+ex.message+'</div>';
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+async function extractPDFText(arrayBuffer){
+  // Use PDF.js from CDN to extract text
+  if(!window.pdfjsLib){
+    await new Promise((res,rej)=>{
+      const s=document.createElement('script');
+      s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+      s.onload=res;s.onerror=rej;document.head.appendChild(s);
+    });
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+  const pdf=await window.pdfjsLib.getDocument({data:arrayBuffer}).promise;
+  let text='';
+  for(let i=1;i<=pdf.numPages;i++){
+    const page=await pdf.getPage(i);
+    const content=await page.getTextContent();
+    text+=content.items.map(item=>item.str).join(' ')+'\n';
+  }
+  return text;
+}
+
+function parsePOText(text,filename){
+  const t=text.replace(/\s+/g,' ');
+
+  // PO Number
+  const poMatch=t.match(/P\.?O\.?\s*(?:No\.?|Number|#)[:\s#]*([A-Z0-9\-]+)/i)||t.match(/PO\s*[:#]?\s*([0-9]+)/i);
+  const po=poMatch?poMatch[1].trim():'';
+
+  // Customer name - usually appears near "To:" or at top
+  const custMatch=t.match(/(?:From|Bill\s+(?:From|To)|Company)[:\s]+([A-Z][A-Za-z\s,\.]+?)(?=\s+\d|\s+To:|\s+Ship)/)||
+    t.match(/^([A-Z][A-Za-z\s]+(?:Inc\.|LLC|Corp\.|Co\.))/m);
+  // Better: look for who sent it (their name at top before address)
+  const lines=text.split('\n').map(l=>l.trim()).filter(Boolean);
+  let customer='';
+  for(const l of lines){if(l.match(/^[A-Z][A-Za-z\s]+(?:Inc\.|LLC|Corp\.|Co\.|Works|Mfg)/))  {customer=l.trim();break;}}
+
+  // Part number - look for common patterns
+  const partMatch=t.match(/Part\s+(?:No|Number|#)[:\s]+([A-Z0-9\-#]+)/i)||
+    t.match(/(?:Part|Item)[:\s]+([A-Z]{2,}[\-][A-Z0-9\-#]+)/i)||
+    t.match(/\b([A-Z]{2,3}-[A-Z0-9]{2,}[A-Z0-9\-#]*)\b/);
+  const part=partMatch?partMatch[1].trim():'';
+
+  // Description
+  const descMatch=t.match(/Description[:\s]+(.{5,60}?)(?=\s+\d+\.?\d*\s+\$|\s+Qty|\s+Quantity)/i)||
+    t.match(/(?:Open\s+)?[A-Z]{2,3}-[A-Z0-9\-#]+\s+(.{5,80}?)(?=\s+\d+\.?\d*\s+\$)/i);
+  const description=descMatch?descMatch[1].trim():'';
+
+  // Quantity
+  const qtyMatch=t.match(/Quantity[:\s]+(\d+(?:\.\d+)?)/i)||t.match(/\b(\d+)\.00\s+\$/)||t.match(/Qty[:\s]+(\d+)/i);
+  const qty=qtyMatch?Math.round(parseFloat(qtyMatch[1])):0;
+
+  // Due date / Require date
+  const dueMatch=t.match(/Require(?:d)?\s+Date[:\s]+(\d{1,2}\/\d{1,2}\/\d{4})/i)||
+    t.match(/Due\s+Date[:\s]+(\d{1,2}\/\d{1,2}\/\d{4})/i)||
+    t.match(/Date[:\s]+(\d{2}\/\d{2}\/\d{4})/i);
+  let due='';
+  if(dueMatch){const d=new Date(dueMatch[1]);if(!isNaN(d))due=d.toISOString().slice(0,10);}
+
+  // WO number
+  const woMatch=t.match(/W\.?O\.?\s*#?\s*[:\s]*([0-9]+)/i);
+  const wo=woMatch?woMatch[1].trim():'';
+
+  // Rush flag
+  const rush=t.toLowerCase().includes('hot')||t.toLowerCase().includes('rush')||t.toLowerCase().includes('urgent');
+
+  // Now search history for matching part
+  const partLower=part.toLowerCase();
+  const descLower=description.toLowerCase();
+  const history=orders.filter(o=>{
+    if(!o.part)return false;
+    const op=o.part.toLowerCase();
+    return(part&&op.includes(partLower))||(description&&op.includes(descLower.split(' ')[0]))||
+      (o.po&&o.po===po);
+  }).sort((a,b)=>b.id-a.id);
+
+  const prevOrder=history.length?history[0]:null;
+  const prevSeq=prevOrder&&prevOrder.sequence&&prevOrder.sequence.length?prevOrder.sequence:
+    prevOrder?Object.keys(prevOrder.machines||{}).filter(m=>machHours(prevOrder,m)>0).map(m=>({machine:m,h:machHours(prevOrder,m),wo:weekOffset,day:0})):[];
+  const prevFiles=prevOrder&&prevOrder.files&&prevOrder.files.length?prevOrder.files:[];
+  const prevOps=prevOrder?[...new Set((prevOrder.signoffs||[]).map(s=>s.operator))].join(', '):'';
+
+  return{po,customer,part,description,qty,due,wo,rush,prevOrder,prevSeq,prevFiles,prevOps,rawText:t};
+}
+
+function renderPOPreview(p){
+  const preview=document.getElementById('po-preview');
+  const histBanner=p.prevOrder?
+    '<div style="background:#0d2a1f;border:1px solid #2ecc71;border-radius:7px;padding:8px 12px;font-size:12px;color:#2ecc71;margin-bottom:10px">'+
+    '✅ <strong>Match found in history</strong> — last run: <strong>'+p.prevOrder.customer+' · '+p.prevOrder.part+'</strong>'+(p.prevOps?' · Worked by: '+p.prevOps:'')+
+    (p.prevSeq.length?' · <strong>'+p.prevSeq.length+' operation'+(p.prevSeq.length!==1?'s':'')+' pre-filled</strong>':'')+
+    (p.prevFiles.length?' · <strong>'+p.prevFiles.length+' file'+(p.prevFiles.length!==1?'s':'')+' loaded</strong>':'')+
+    '</div>':'';
+
+  const seqHtml=p.prevSeq.length?
+    '<div style="font-size:11px;color:#aaa;margin-top:6px"><strong style="color:#c39bd3">Operations from last run:</strong> '+
+    p.prevSeq.map((s,i)=>'<span style="color:'+( MCOLORS[s.machine]||'#888')+'">'+MICONS[s.machine]+' '+s.machine+' ('+s.h+'h)</span>').join(' → ')+'</div>':'';
+
+  const filesHtml=p.prevFiles.length?
+    '<div style="font-size:11px;color:#aaa;margin-top:4px"><strong style="color:#c39bd3">Files:</strong> '+
+    p.prevFiles.map(f=>fileTypeIcon(f.type)+' '+f.label).join(', ')+'</div>':'';
+
+  preview.innerHTML=histBanner+
+    '<div style="background:#0d1621;border-radius:8px;padding:12px 14px;margin-bottom:10px">'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">'+
+      '<div><span style="color:#7f8c8d">Customer</span><div style="color:#ecf0f1;font-weight:700;margin-top:2px">'+(p.customer||'<span style="color:#e74c3c">Not detected</span>')+'</div></div>'+
+      '<div><span style="color:#7f8c8d">PO #</span><div style="color:#f39c12;font-weight:700;margin-top:2px">'+(p.po||'—')+'</div></div>'+
+      '<div><span style="color:#7f8c8d">Part #</span><div style="color:#ecf0f1;font-weight:700;margin-top:2px">'+(p.part||'<span style="color:#e74c3c">Not detected</span>')+'</div></div>'+
+      '<div><span style="color:#7f8c8d">WO #</span><div style="color:#ecf0f1;font-weight:700;margin-top:2px">'+(p.wo||'—')+'</div></div>'+
+      '<div><span style="color:#7f8c8d">Qty</span><div style="color:#ecf0f1;font-weight:700;margin-top:2px">'+(p.qty||'<span style="color:#e74c3c">Not detected</span>')+'</div></div>'+
+      '<div><span style="color:#7f8c8d">Due Date</span><div style="color:#ecf0f1;font-weight:700;margin-top:2px">'+(p.due||'<span style="color:#e74c3c">Not detected</span>')+'</div></div>'+
+    '</div>'+
+    '<div style="margin-top:8px;font-size:11px;color:#aaa">'+(p.description||'')+'</div>'+
+    (p.rush?'<div style="margin-top:6px;font-size:11px;font-weight:700;color:#e74c3c">🚨 HOT / RUSH detected</div>':'')+
+    seqHtml+filesHtml+
+    '</div>'+
+    '<div style="font-size:11px;color:#7f8c8d;margin-bottom:8px">Review the details above then click Add to Scheduler. You can adjust the sequence and hours in the order modal.</div>';
+
+  document.getElementById('po-go-btn').style.display='';
+}
+
+function doPOImport(){
+  if(!_parsedPO)return;
+  const p=_parsedPO;
+  const partLabel=(p.part+(p.description?' — '+p.description:'')+(p.wo?' [WO:'+p.wo+']':'')).trim();
+  closeModalDirect();
+  showModal({
+    customer:p.customer||'',
+    part:partLabel,
+    po:p.po||'',
+    qty:p.qty||0,
+    due:p.due||'',
+    status:'Scheduled',
+    weekOffset,day:0,
+    rush:p.rush||false,
+    machines:p.prevOrder?{...p.prevOrder.machines}:{},
+    sequence:p.prevSeq.map(s=>({...s,wo:weekOffset,day:0})),
+    files:[...p.prevFiles]
+  },null,p.rush||false);
 }
 
 loadWknd();
